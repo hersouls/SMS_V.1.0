@@ -314,7 +314,6 @@ const SubscriptionApp = () => {
             </button>
             <button className="flex flex-col items-center gap-1 py-2 px-4 text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-400 rounded-lg transition-colors duration-200">
               <User className="w-6 h-6" />
-              <span className="text-xs font-medium">프로필</span>
             </button>
           </div>
         </div>
