@@ -1,46 +1,93 @@
-# Getting Started with Create React App
+# 구독 관리 애플리케이션
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+React와 TypeScript로 개발된 구독 서비스 관리 애플리케이션입니다.
 
-## Available Scripts
+## 주요 기능
 
-In the project directory, you can run:
+### 📱 구독 관리
+- 구독 서비스 추가/수정/삭제
+- 구독 정보 관리 (이름, 가격, 갱신일, 결제일, 결제 방법, URL 등)
+- 통화 지원 (USD, KRW)
+- 실시간 환율 정보 연동 (한국은행 ECOS API)
 
-### `npm start`
+### 💰 가격 관리
+- 월 구독료 추적
+- 원화 통합 표시 (달러 구독도 원화로 환산)
+- 총 구독 수 및 총액 표시
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+### 📅 달력 기능
+- 구독 갱신일 달력 표시
+- 달력에서 구독 정보 확인 및 수정
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+### 🔔 알림 시스템
+- 구독 추가/수정/삭제 알림
+- 알람 히스토리 관리
+- 실시간 알림 토스트
 
-### `npm test`
+### 👤 프로필 관리
+- 사용자 프로필 정보 관리
+- 프로필 사진 및 커버 사진 업로드
+- 개인 정보 수정
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### 🎨 UI/UX
+- 반응형 디자인
+- Tailwind CSS 스타일링
+- Lucide React 아이콘
+- Google Fonts (Nanum Gothic)
 
-### `npm run build`
+## 기술 스택
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+- **Frontend**: React 18, TypeScript
+- **Styling**: Tailwind CSS
+- **Icons**: Lucide React, Heroicons
+- **State Management**: React Hooks
+- **Build Tool**: Create React App
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## 설치 및 실행
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+```bash
+# 의존성 설치
+npm install
 
-### `npm run eject`
+# 개발 서버 실행
+npm start
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+# 빌드
+npm run build
+```
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## 환경 설정
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+### 환율 API 설정
+한국은행 ECOS API를 사용하여 실시간 환율 정보를 가져옵니다.
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+1. [한국은행 ECOS](https://ecos.bok.or.kr/)에서 API 키 발급
+2. `src/App.tsx`의 `fetchExchangeRate` 함수에서 API 키 설정
 
-## Learn More
+```typescript
+const API_KEY = 'your_api_key_here';
+const response = await fetch(`https://ecos.bok.or.kr/api/StatisticSearch/${API_KEY}/json/kr/1/100/036Y001/DD/${dateStr}/${dateStr}/0001`);
+```
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+## 프로젝트 구조
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+```
+src/
+├── App.tsx              # 메인 애플리케이션 컴포넌트
+├── App.css              # 전역 스타일
+├── index.tsx            # 애플리케이션 진입점
+└── index.css            # 기본 스타일
+```
+
+## 주요 컴포넌트
+
+- **메인 화면**: 구독 목록, 총액 표시, 달력
+- **구독 추가/수정**: 구독 정보 입력 폼
+- **상세 보기**: 구독 상세 정보 표시
+- **알림**: 알림 목록 및 관리
+- **알람 히스토리**: 구독 활동 기록
+- **프로필**: 사용자 프로필 관리
+
+## 라이선스
+
+MIT License

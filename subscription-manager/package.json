@@ -2,7 +2,10 @@
   "name": "subscription-manager",
   "version": "0.1.0",
   "private": true,
+  "homepage": "https://subscription.moonwave.kr",
   "dependencies": {
+    "@headlessui/react": "^2.2.4",
+    "@heroicons/react": "^2.2.0",
     "@tailwindcss/forms": "^0.5.10",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
