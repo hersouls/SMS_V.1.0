@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Search, Check, Calendar, DollarSign, Tag, Bell, User, Home, Menu, Plus, Edit2, Trash2, Upload, Image, Settings, ChevronLeft, ChevronRight, CreditCard, Globe, Banknote, CalendarRange } from 'lucide-react';
 import { Transition } from '@headlessui/react';
 import { CheckCircleIcon, XMarkIcon, CheckIcon, HandThumbUpIcon, UserIcon, PhotoIcon, UserCircleIcon } from '@heroicons/react/24/outline';
+import { useSupabase } from './contexts/SupabaseContext';
+import { LoginScreen } from './components/LoginScreen';
+import { SupabaseTest } from './components/SupabaseTest';
 
 interface Subscription {
   id: number;
@@ -66,7 +69,9 @@ interface Profile {
 }
 
 const SubscriptionApp = () => {
-  const [currentScreen, setCurrentScreen] = useState<'main' | 'add' | 'manage' | 'detail' | 'notifications' | 'alarm-history' | 'profile'>('main');
+  const { user, profile: supabaseProfile, loading: authLoading, signOut } = useSupabase();
+  const [currentScreen, setCurrentScreen] = useState<'main' | 'add' | 'manage' | 'detail' | 'notifications' | 'alarm-history' | 'profile' | 'supabase-test'>('main');
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null);
   const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -90,6 +95,15 @@ const SubscriptionApp = () => {
     
     return () => clearInterval(interval);
   }, []);
+
+  // 인증 상태 변경 감지
+  useEffect(() => {
+    if (user && !authLoading) {
+      setIsLoggedIn(true);
+    } else if (!user && !authLoading) {
+      setIsLoggedIn(false);
+    }
+  }, [user, authLoading]);
   
   const [alarmHistory, setAlarmHistory] = useState<AlarmHistory[]>([
     {
@@ -239,7 +253,7 @@ const SubscriptionApp = () => {
             clipRule="evenodd"
           />
         </svg>
-      ),
+      ) as React.ReactElement,
     },
     {
       name: 'Instagram',
@@ -252,7 +266,7 @@ const SubscriptionApp = () => {
             clipRule="evenodd"
           />
         </svg>
-      ),
+      ) as React.ReactElement,
     },
     {
       name: 'GitHub',
@@ -265,7 +279,7 @@ const SubscriptionApp = () => {
             clipRule="evenodd"
           />
         </svg>
-      ),
+      ) as React.ReactElement,
     },
   ];
 
@@ -684,6 +698,67 @@ const SubscriptionApp = () => {
     setCurrentScreen('main');
   };
 
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    if (isLoggingOut) {
+      console.log('Logout already in progress');
+      return;
+    }
+    
+    console.log('Logout button clicked');
+    setIsLoggingOut(true);
+    
+    // 타임아웃 설정 (10초)
+    const timeoutId = setTimeout(() => {
+      console.log('Logout timeout - forcing logout');
+      setIsLoggedIn(false);
+      setCurrentScreen('main');
+      setIsLoggingOut(false);
+      addNotification('warning', '로그아웃 완료', '타임아웃으로 인해 로그아웃되었습니다.');
+    }, 10000);
+    
+    try {
+      console.log('Calling signOut...');
+      await signOut();
+      clearTimeout(timeoutId);
+      console.log('SignOut completed');
+      setIsLoggedIn(false);
+      setCurrentScreen('main');
+      // 로그아웃 후 강제로 로그인 화면 표시
+      setTimeout(() => {
+        console.log('Setting isLoggedIn to false');
+        setIsLoggedIn(false);
+        setIsLoggingOut(false);
+      }, 100);
+      addNotification('success', '로그아웃 완료', '성공적으로 로그아웃되었습니다.');
+    } catch (error) {
+      clearTimeout(timeoutId);
+      console.error('Logout error:', error);
+      addNotification('error', '로그아웃 실패', '로그아웃 중 오류가 발생했습니다.');
+      setIsLoggingOut(false);
+    }
+  };
+
+  // 로딩 중이거나 로그인하지 않은 경우
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-blue-900 via-blue-800 to-blue-700 flex items-center justify-center">
+        <div className="text-white text-xl">로딩 중...</div>
+      </div>
+    );
+  }
+
+  // 로그인하지 않은 경우 로그인 화면 표시
+  if (!isLoggedIn) {
+    return <LoginScreen onLoginSuccess={() => setIsLoggedIn(true)} />;
+  }
+
+  // Supabase 테스트 화면
+  if (currentScreen === 'supabase-test') {
+    return <SupabaseTest />;
+  }
+
   // 공통 헤더 컴포넌트
   const CommonHeader = () => (
         <div className="relative px-4 pt-8 pb-8">
@@ -809,7 +884,7 @@ const SubscriptionApp = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <button
-                      onClick={(e) => {
+                      onClick={(e: React.MouseEvent) => {
                         e.stopPropagation();
                         if (subscription.url) {
                           window.open(subscription.url, '_blank', 'noopener,noreferrer');
@@ -932,12 +1007,12 @@ const SubscriptionApp = () => {
                           style={{ backgroundColor: `${event.color}20` }}
                         >
                           <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (event.subscription.url) {
-                                window.open(event.subscription.url, '_blank', 'noopener,noreferrer');
-                              }
-                            }}
+                                                    onClick={(e: React.MouseEvent) => {
+                          e.stopPropagation();
+                          if (event.subscription.url) {
+                            window.open(event.subscription.url, '_blank', 'noopener,noreferrer');
+                          }
+                        }}
                             className="w-3 h-3 rounded-full flex items-center justify-center text-[8px] text-white overflow-hidden hover:opacity-80 transition-opacity duration-200"
                             style={{ backgroundColor: event.color }}
                             disabled={!event.subscription.url}
@@ -1030,16 +1105,30 @@ const SubscriptionApp = () => {
         </div>
       </div>
 
-      {/* 오른쪽 하단 고정 구독 추가 버튼 */}
-      <button
-        onClick={() => {
-          setCurrentScreen('add');
-          resetForm();
-        }}
-        className="fixed bottom-20 right-4 rounded-full bg-indigo-600 p-3 text-white shadow-lg hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 z-40"
-      >
-        <Plus className="w-6 h-6" />
-      </button>
+      {/* 오른쪽 하단 고정 버튼들 */}
+      <div className="fixed bottom-20 right-4 flex flex-col gap-3 z-40">
+        {/* Supabase 테스트 버튼 */}
+        <button
+          onClick={() => setCurrentScreen('supabase-test')}
+          className="rounded-full bg-green-600 p-3 text-white shadow-lg hover:bg-green-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600"
+          title="Supabase 테스트"
+        >
+          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+          </svg>
+        </button>
+        
+        {/* 구독 추가 버튼 */}
+        <button
+          onClick={() => {
+            setCurrentScreen('add');
+            resetForm();
+          }}
+          className="rounded-full bg-indigo-600 p-3 text-white shadow-lg hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+        >
+          <Plus className="w-6 h-6" />
+        </button>
+      </div>
       </>
     );
   }
@@ -1491,7 +1580,7 @@ const SubscriptionApp = () => {
 
       {/* 메인 콘텐츠 */}
       <div className="bg-gray-50 rounded-t-3xl px-4 pt-6 pb-24 min-h-[75vh] -mt-4 relative z-10">
-          <form onSubmit={(e) => { e.preventDefault(); handleProfileSave(); }}>
+          <form onSubmit={(e: React.FormEvent) => { e.preventDefault(); handleProfileSave(); }}>
             <div className="space-y-8">
               {/* 프로필 섹션 */}
               <div className="border-b border-gray-200 pb-8">
@@ -1510,7 +1599,7 @@ const SubscriptionApp = () => {
                       id="username"
                 type="text"
                       value={profile.username}
-                      onChange={(e) => handleProfileInput('username', e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleProfileInput('username', e.target.value)}
                       placeholder="사용자명을 입력하세요"
                       className="block w-full py-2 px-3 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-lg bg-white border border-gray-300 text-sm"
               />
@@ -1632,21 +1721,35 @@ const SubscriptionApp = () => {
             </div>
 
             {/* 액션 버튼 */}
-            <div className="mt-8 flex items-center justify-end gap-4">
+            <div className="mt-8 flex items-center justify-between">
               <button
                 type="button"
-                onClick={handleProfileCancel}
-                className="text-sm font-semibold text-gray-900 hover:text-gray-700"
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                className={`rounded-lg px-4 py-2 text-sm font-semibold text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 ${
+                  isLoggingOut 
+                    ? 'bg-gray-400 cursor-not-allowed' 
+                    : 'bg-red-600 hover:bg-red-500'
+                }`}
               >
-                취소
-                  </button>
-              <button
-                type="submit"
-                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                저장
+                {isLoggingOut ? '로그아웃 중...' : '로그아웃'}
               </button>
+              <div className="flex items-center gap-4">
+                <button
+                  type="button"
+                  onClick={handleProfileCancel}
+                  className="text-sm font-semibold text-gray-900 hover:text-gray-700"
+                >
+                  취소
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  저장
+                </button>
               </div>
+            </div>
           </form>
             </div>
       </div>

@@ -3,13 +3,16 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
+import { SupabaseProvider } from './contexts/SupabaseContext';
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
 );
 root.render(
   <React.StrictMode>
-    <App />
+    <SupabaseProvider>
+      <App />
+    </SupabaseProvider>
   </React.StrictMode>
 );
 

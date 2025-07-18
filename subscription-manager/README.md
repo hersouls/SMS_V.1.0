@@ -38,6 +38,7 @@ React와 TypeScript로 개발된 구독 서비스 관리 애플리케이션입�
 ## 기술 스택
 
 - **Frontend**: React 18, TypeScript
+- **Backend**: Supabase (PostgreSQL, Auth, Real-time)
 - **Styling**: Tailwind CSS
 - **Icons**: Lucide React, Heroicons
 - **State Management**: React Hooks
@@ -57,6 +58,39 @@ npm run build
 ```
 
 ## 환경 설정
+
+### Supabase 설정
+Supabase를 사용하여 백엔드 데이터베이스를 구성합니다.
+
+1. [Supabase](https://supabase.com/)에서 새 프로젝트 생성
+2. 프로젝트 설정에서 URL과 API 키 확인
+3. `.env.local` 파일 생성 및 환경변수 설정:
+
+```bash
+# Supabase Configuration
+REACT_APP_SUPABASE_URL=your_supabase_project_url
+REACT_APP_SUPABASE_ANON_KEY=your_supabase_anon_key
+
+# Exchange Rate API (기존 설정 유지)
+REACT_APP_EXCHANGE_RATE_API_KEY=your_exchange_rate_api_key
+```
+
+### 소셜 로그인 설정
+
+구글과 카카오톡 소셜 로그인을 사용하려면 Supabase에서 다음 설정을 완료해야 합니다:
+
+#### Google OAuth 설정
+1. [Google Cloud Console](https://console.cloud.google.com/)에서 새 프로젝트 생성
+2. OAuth 2.0 클라이언트 ID 생성
+3. 승인된 리디렉션 URI에 `https://your-project.supabase.co/auth/v1/callback` 추가
+4. 클라이언트 ID와 클라이언트 시크릿을 Supabase Authentication > Providers > Google에 설정
+
+#### Kakao OAuth 설정
+1. [Kakao Developers](https://developers.kakao.com/)에서 애플리케이션 생성
+2. 플랫폼 설정에서 웹 플랫폼 추가
+3. 사이트 도메인에 `https://your-project.supabase.co` 추가
+4. 리디렉션 URI에 `https://your-project.supabase.co/auth/v1/callback` 추가
+5. JavaScript 키를 Supabase Authentication > Providers > Kakao에 설정
 
 ### 환율 API 설정
 한국은행 ECOS API를 사용하여 실시간 환율 정보를 가져옵니다.
