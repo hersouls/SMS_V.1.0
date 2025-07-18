@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, JSX } from 'react';
 import { Search, Check, Calendar, DollarSign, Tag, Bell, User, Home, Menu, Plus, Edit2, Trash2, Upload, Image, Settings, ChevronLeft, ChevronRight, CreditCard, Globe, Banknote, CalendarRange } from 'lucide-react';
 import { Transition } from '@headlessui/react';
 import { CheckCircleIcon, XMarkIcon, CheckIcon, HandThumbUpIcon, UserIcon, PhotoIcon, UserCircleIcon } from '@heroicons/react/24/outline';
@@ -69,7 +69,7 @@ interface Profile {
 }
 
 const SubscriptionApp = () => {
-  const { user, profile: supabaseProfile, loading: authLoading } = useSupabase();
+  const { user, profile: supabaseProfile, loading: authLoading, signOut } = useSupabase();
   const [currentScreen, setCurrentScreen] = useState<'main' | 'add' | 'manage' | 'detail' | 'notifications' | 'alarm-history' | 'profile' | 'supabase-test'>('main');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null);
@@ -253,7 +253,7 @@ const SubscriptionApp = () => {
             clipRule="evenodd"
           />
         </svg>
-      ),
+      ) as React.ReactElement,
     },
     {
       name: 'Instagram',
@@ -266,7 +266,7 @@ const SubscriptionApp = () => {
             clipRule="evenodd"
           />
         </svg>
-      ),
+      ) as React.ReactElement,
     },
     {
       name: 'GitHub',
@@ -279,7 +279,7 @@ const SubscriptionApp = () => {
             clipRule="evenodd"
           />
         </svg>
-      ),
+      ) as React.ReactElement,
     },
   ];
 
@@ -698,6 +698,48 @@ const SubscriptionApp = () => {
     setCurrentScreen('main');
   };
 
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    if (isLoggingOut) {
+      console.log('Logout already in progress');
+      return;
+    }
+    
+    console.log('Logout button clicked');
+    setIsLoggingOut(true);
+    
+    // 타임아웃 설정 (10초)
+    const timeoutId = setTimeout(() => {
+      console.log('Logout timeout - forcing logout');
+      setIsLoggedIn(false);
+      setCurrentScreen('main');
+      setIsLoggingOut(false);
+      addNotification('warning', '로그아웃 완료', '타임아웃으로 인해 로그아웃되었습니다.');
+    }, 10000);
+    
+    try {
+      console.log('Calling signOut...');
+      await signOut();
+      clearTimeout(timeoutId);
+      console.log('SignOut completed');
+      setIsLoggedIn(false);
+      setCurrentScreen('main');
+      // 로그아웃 후 강제로 로그인 화면 표시
+      setTimeout(() => {
+        console.log('Setting isLoggedIn to false');
+        setIsLoggedIn(false);
+        setIsLoggingOut(false);
+      }, 100);
+      addNotification('success', '로그아웃 완료', '성공적으로 로그아웃되었습니다.');
+    } catch (error) {
+      clearTimeout(timeoutId);
+      console.error('Logout error:', error);
+      addNotification('error', '로그아웃 실패', '로그아웃 중 오류가 발생했습니다.');
+      setIsLoggingOut(false);
+    }
+  };
+
   // 로딩 중이거나 로그인하지 않은 경우
   if (authLoading) {
     return (
@@ -842,7 +884,7 @@ const SubscriptionApp = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <button
-                      onClick={(e) => {
+                      onClick={(e: React.MouseEvent) => {
                         e.stopPropagation();
                         if (subscription.url) {
                           window.open(subscription.url, '_blank', 'noopener,noreferrer');
@@ -1679,21 +1721,35 @@ const SubscriptionApp = () => {
             </div>
 
             {/* 액션 버튼 */}
-            <div className="mt-8 flex items-center justify-end gap-4">
+            <div className="mt-8 flex items-center justify-between">
               <button
                 type="button"
-                onClick={handleProfileCancel}
-                className="text-sm font-semibold text-gray-900 hover:text-gray-700"
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                className={`rounded-lg px-4 py-2 text-sm font-semibold text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 ${
+                  isLoggingOut 
+                    ? 'bg-gray-400 cursor-not-allowed' 
+                    : 'bg-red-600 hover:bg-red-500'
+                }`}
               >
-                취소
-                  </button>
-              <button
-                type="submit"
-                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                저장
+                {isLoggingOut ? '로그아웃 중...' : '로그아웃'}
               </button>
+              <div className="flex items-center gap-4">
+                <button
+                  type="button"
+                  onClick={handleProfileCancel}
+                  className="text-sm font-semibold text-gray-900 hover:text-gray-700"
+                >
+                  취소
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  저장
+                </button>
               </div>
+            </div>
           </form>
             </div>
       </div>

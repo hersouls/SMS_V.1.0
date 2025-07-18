@@ -36,13 +36,22 @@ export const SupabaseProvider: React.FC<SupabaseProviderProps> = ({ children }) 
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get initial session
+    // Get initial session with timeout
+    const timeoutId = setTimeout(() => {
+      setLoading(false);
+    }, 3000); // 3초 후 강제로 로딩 종료
+
     supabase.auth.getSession().then(({ data: { session } }) => {
+      clearTimeout(timeoutId);
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
         fetchProfile(session.user.id);
       }
+      setLoading(false);
+    }).catch((error) => {
+      console.error('Session fetch error:', error);
+      clearTimeout(timeoutId);
       setLoading(false);
     });
 
@@ -60,7 +69,10 @@ export const SupabaseProvider: React.FC<SupabaseProviderProps> = ({ children }) 
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(timeoutId);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const fetchProfile = async (userId: string) => {
@@ -99,8 +111,18 @@ export const SupabaseProvider: React.FC<SupabaseProviderProps> = ({ children }) 
   };
 
   const signOut = async () => {
+    console.log('SupabaseContext signOut called');
     const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase signOut error:', error);
+      throw error;
+    }
+    console.log('Supabase signOut successful');
+    // 로그아웃 후 상태 초기화
+    setUser(null);
+    setSession(null);
+    setProfile(null);
+    console.log('User state cleared');
   };
 
   const updateProfile = async (updates: Partial<Profile>) => {
