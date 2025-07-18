@@ -1,4 +1,4 @@
-import React, { useState, useEffect, JSX } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Check, Calendar, DollarSign, Tag, Bell, User, Home, Menu, Plus, Edit2, Trash2, Upload, Image, Settings, ChevronLeft, ChevronRight, CreditCard, Globe, Banknote, CalendarRange } from 'lucide-react';
 import { Transition } from '@headlessui/react';
 import { CheckCircleIcon, XMarkIcon, CheckIcon, HandThumbUpIcon, UserIcon, PhotoIcon, UserCircleIcon } from '@heroicons/react/24/outline';
@@ -1007,12 +1007,12 @@ const SubscriptionApp = () => {
                           style={{ backgroundColor: `${event.color}20` }}
                         >
                           <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (event.subscription.url) {
-                                window.open(event.subscription.url, '_blank', 'noopener,noreferrer');
-                              }
-                            }}
+                                                    onClick={(e: React.MouseEvent) => {
+                          e.stopPropagation();
+                          if (event.subscription.url) {
+                            window.open(event.subscription.url, '_blank', 'noopener,noreferrer');
+                          }
+                        }}
                             className="w-3 h-3 rounded-full flex items-center justify-center text-[8px] text-white overflow-hidden hover:opacity-80 transition-opacity duration-200"
                             style={{ backgroundColor: event.color }}
                             disabled={!event.subscription.url}
@@ -1580,7 +1580,7 @@ const SubscriptionApp = () => {
 
       {/* 메인 콘텐츠 */}
       <div className="bg-gray-50 rounded-t-3xl px-4 pt-6 pb-24 min-h-[75vh] -mt-4 relative z-10">
-          <form onSubmit={(e) => { e.preventDefault(); handleProfileSave(); }}>
+          <form onSubmit={(e: React.FormEvent) => { e.preventDefault(); handleProfileSave(); }}>
             <div className="space-y-8">
               {/* 프로필 섹션 */}
               <div className="border-b border-gray-200 pb-8">
@@ -1599,7 +1599,7 @@ const SubscriptionApp = () => {
                       id="username"
                 type="text"
                       value={profile.username}
-                      onChange={(e) => handleProfileInput('username', e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleProfileInput('username', e.target.value)}
                       placeholder="사용자명을 입력하세요"
                       className="block w-full py-2 px-3 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-lg bg-white border border-gray-300 text-sm"
               />
