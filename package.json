@@ -2,7 +2,7 @@
   "name": "subscription-manager",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://hersouls.github.io/SMS_V.1.0",
+  "homepage": "https://subscription.moonwave.kr/SMS_V.1.0",
   "dependencies": {
     "@headlessui/react": "^2.2.4",
     "@heroicons/react": "^2.2.0",
