@@ -27,6 +27,9 @@ jobs:
       - name: Build
         run: npm run build
         working-directory: subscription-manager
+        env:
+          PUBLIC_URL: /SMS_V.1.0
+          CI: false
       - name: Add SPA fallback (404.html)
         run: cp index.html 404.html
         working-directory: subscription-manager/build
