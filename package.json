@@ -1,8 +1,4 @@
 {
-<<<<<<< HEAD
-  "dependencies": {
-    "@headlessui/react": "^2.2.4"
-=======
   "name": "subscription-manager",
   "version": "0.1.0",
   "private": true,
@@ -54,6 +50,5 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
->>>>>>> 5727cdcfe9abac2cc96f21fe4379639d1c7d590a
   }
 }
