@@ -2,40 +2,46 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
-    
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        cache: 'npm'
-        cache-dependency-path: subscription-manager/package-lock.json
-        
-    - name: Install dependencies
-      run: |
-        cd subscription-manager
-        npm ci
-        
-    - name: Build
-      run: |
-        cd subscription-manager
-        npm run build
-        
-    - name: Deploy to GitHub Pages
-      uses: peaceiris/actions-gh-pages@v3
-      if: github.ref == 'refs/heads/main'
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./subscription-manager/build
-        cname: subscription.moonwave.kr
-        destination_dir: SMS_V.1.0
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+      - name: Install dependencies
+        run: npm ci
+        working-directory: subscription-manager
+      - name: Build
+        run: npm run build
+        working-directory: subscription-manager
+        env:
+          CI: false
+      - name: Add SPA fallback (404.html)
+        run: cp index.html 404.html
+        working-directory: subscription-manager/build
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: subscription-manager/build
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

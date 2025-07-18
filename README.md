@@ -1,128 +1,127 @@
-# 구독 관리 앱 (Subscription Manager)
+# 구독 관리 애플리케이션
 
-모던하고 직관적인 구독 서비스 관리 애플리케이션입니다. 사용자가 다양한 구독 서비스를 쉽게 추가, 관리, 추적할 수 있도록 설계되었습니다.
+React와 TypeScript로 개발된 구독 서비스 관리 애플리케이션입니다.
 
-## 🚀 주요 기능
+## 주요 기능
 
-### 📱 메인 화면
-- **총 구독료 표시**: 월별 총 구독 비용을 한눈에 확인
-- **구독 서비스 목록**: 현재 구독 중인 서비스들을 카드 형태로 표시
-- **갱신일 정보**: 각 서비스의 다음 갱신 날짜 표시
-- **빠른 관리**: 관리하기 버튼으로 편리한 접근
+### 📱 구독 관리
+- 구독 서비스 추가/수정/삭제
+- 구독 정보 관리 (이름, 가격, 갱신일, 결제일, 결제 방법, URL 등)
+- 통화 지원 (USD, KRW)
+- 실시간 환율 정보 연동 (한국은행 ECOS API)
 
-### ➕ 구독 추가 화면
-- **인기 서비스 선택**: 넷플릭스, 스포티파이 등 인기 서비스 중 선택
-- **검색 기능**: 서비스명으로 빠른 검색
-- **카테고리 필터**: 엔터테인먼트, 음악, 생산성 등 카테고리별 필터링
-- **커스텀 입력**: 직접 서비스 정보 입력 가능
-- **알림 설정**: 갱신 알림 기능
+### 💰 가격 관리
+- 월 구독료 추적
+- 원화 통합 표시 (달러 구독도 원화로 환산)
+- 총 구독 수 및 총액 표시
 
-### ⚙️ 구독 관리 화면
-- **편집 기능**: 기존 구독 정보 수정
-- **삭제 기능**: 불필요한 구독 서비스 제거
-- **상세 정보**: 카테고리, 갱신일, 가격 등 상세 정보 표시
+### 📅 달력 기능
+- 구독 갱신일 달력 표시
+- 달력에서 구독 정보 확인 및 수정
 
-## 🎨 디자인 특징
+### 🔔 알림 시스템
+- 구독 추가/수정/삭제 알림
+- 알람 히스토리 관리
+- 실시간 알림 토스트
 
-- **모던 UI**: Tailwind CSS를 활용한 깔끔하고 현대적인 디자인
-- **반응형**: 모바일과 데스크톱 모두에서 최적화된 경험
-- **그라데이션**: 아름다운 블루 그라데이션 배경
-- **애니메이션**: 부드러운 전환 효과와 호버 애니메이션
-- **한국어 지원**: 완전한 한국어 인터페이스
+### 👤 프로필 관리
+- 사용자 프로필 정보 관리
+- 프로필 사진 및 커버 사진 업로드
+- 개인 정보 수정
 
-## 🛠️ 기술 스택
+### 🎨 UI/UX
+- 반응형 디자인
+- Tailwind CSS 스타일링
+- Lucide React 아이콘
+- Google Fonts (Nanum Gothic)
 
-- **React 18**: 최신 React 기능 활용
-- **TypeScript**: 타입 안전성 보장
-- **Tailwind CSS**: 유틸리티 퍼스트 CSS 프레임워크
-- **Lucide React**: 모던한 아이콘 라이브러리
-- **Create React App**: 빠른 개발 환경
+## 기술 스택
 
-## 📦 설치 및 실행
+- **Frontend**: React 18, TypeScript
+- **Backend**: Supabase (PostgreSQL, Auth, Real-time)
+- **Styling**: Tailwind CSS
+- **Icons**: Lucide React, Heroicons
+- **State Management**: React Hooks
+- **Build Tool**: Create React App
 
-### 필수 요구사항
-- Node.js 16.0.0 이상
-- npm 8.0.0 이상
+## 설치 및 실행
 
-### 설치 방법
-
-1. 저장소 클론
 ```bash
-git clone <repository-url>
-cd subscription-manager
-```
-
-2. 의존성 설치
-```bash
+# 의존성 설치
 npm install
-```
 
-3. 개발 서버 실행
-```bash
+# 개발 서버 실행
 npm start
-```
 
-4. 브라우저에서 확인
-```
-http://localhost:3000
-```
-
-### 빌드
-```bash
+# 빌드
 npm run build
 ```
 
-### GitHub Pages 배포
+## 환경 설정
 
-`main` 브랜치에 푸시하면 GitHub Actions가 애플리케이션을 빌드하여 GitHub Pages에 자동 배포합니다. 배포된 사이트 URL은 리포지토리의 **Settings > Pages** 메뉴에서 확인할 수 있습니다.
+### Supabase 설정
+Supabase를 사용하여 백엔드 데이터베이스를 구성합니다.
 
-## 📱 지원 서비스
+1. [Supabase](https://supabase.com/)에서 새 프로젝트 생성
+2. 프로젝트 설정에서 URL과 API 키 확인
+3. `.env.local` 파일 생성 및 환경변수 설정:
 
-### 엔터테인먼트
-- 넷플릭스 ($19.99/월)
-- 유튜브 프리미엄 ($13.99/월)
-- 디즈니+ ($10.99/월)
+```bash
+# Supabase Configuration
+REACT_APP_SUPABASE_URL=your_supabase_project_url
+REACT_APP_SUPABASE_ANON_KEY=your_supabase_anon_key
 
-### 음악
-- 스포티파이 ($9.99/월)
-- 애플 뮤직 ($10.99/월)
+# Exchange Rate API (기존 설정 유지)
+REACT_APP_EXCHANGE_RATE_API_KEY=your_exchange_rate_api_key
+```
 
-### 생산성
-- ChatGPT Plus ($20.00/월)
-- 어도비 크리에이티브 ($52.99/월)
-- 노션 ($8.00/월)
+### 소셜 로그인 설정
 
-### 쇼핑
-- 아마존 프라임 ($14.99/월)
+구글과 카카오톡 소셜 로그인을 사용하려면 Supabase에서 다음 설정을 완료해야 합니다:
 
-### 개발
-- 깃허브 프로 ($4.00/월)
+#### Google OAuth 설정
+1. [Google Cloud Console](https://console.cloud.google.com/)에서 새 프로젝트 생성
+2. OAuth 2.0 클라이언트 ID 생성
+3. 승인된 리디렉션 URI에 `https://your-project.supabase.co/auth/v1/callback` 추가
+4. 클라이언트 ID와 클라이언트 시크릿을 Supabase Authentication > Providers > Google에 설정
 
-## 🔮 향후 계획
+#### Kakao OAuth 설정
+1. [Kakao Developers](https://developers.kakao.com/)에서 애플리케이션 생성
+2. 플랫폼 설정에서 웹 플랫폼 추가
+3. 사이트 도메인에 `https://your-project.supabase.co` 추가
+4. 리디렉션 URI에 `https://your-project.supabase.co/auth/v1/callback` 추가
+5. JavaScript 키를 Supabase Authentication > Providers > Kakao에 설정
 
-- [ ] 데이터 영속성 (로컬 스토리지/데이터베이스 연동)
-- [ ] 알림 시스템 구현
-- [ ] 통계 및 분석 기능
-- [ ] 다크 모드 지원
-- [ ] PWA 지원
-- [ ] 다국어 지원
+### 환율 API 설정
+한국은행 ECOS API를 사용하여 실시간 환율 정보를 가져옵니다.
 
-## 🤝 기여하기
+1. [한국은행 ECOS](https://ecos.bok.or.kr/)에서 API 키 발급
+2. `src/App.tsx`의 `fetchExchangeRate` 함수에서 API 키 설정
 
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+```typescript
+const API_KEY = 'your_api_key_here';
+const response = await fetch(`https://ecos.bok.or.kr/api/StatisticSearch/${API_KEY}/json/kr/1/100/036Y001/DD/${dateStr}/${dateStr}/0001`);
+```
 
-## 📄 라이선스
+## 프로젝트 구조
 
-이 프로젝트는 MIT 라이선스 하에 배포됩니다. 자세한 내용은 `LICENSE` 파일을 참조하세요.
+```
+src/
+├── App.tsx              # 메인 애플리케이션 컴포넌트
+├── App.css              # 전역 스타일
+├── index.tsx            # 애플리케이션 진입점
+└── index.css            # 기본 스타일
+```
 
-## 📞 문의
+## 주요 컴포넌트
 
-프로젝트에 대한 문의사항이나 버그 리포트는 이슈를 통해 남겨주세요.
+- **메인 화면**: 구독 목록, 총액 표시, 달력
+- **구독 추가/수정**: 구독 정보 입력 폼
+- **상세 보기**: 구독 상세 정보 표시
+- **알림**: 알림 목록 및 관리
+- **알람 히스토리**: 구독 활동 기록
+- **프로필**: 사용자 프로필 관리
 
----
+## 라이선스
 
-**구독 관리 앱**으로 더 스마트한 구독 생활을 시작하세요! 🎉
+MIT License
