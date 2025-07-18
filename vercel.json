@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "subscription-manager/package.json",
+      "use": "@vercel/static-build",
+      "config": { "distDir": "subscription-manager/build" }
+    }
+  ],
+  "routes": [
+    { "src": "/(.*)", "dest": "subscription-manager/build/$1" },
+    { "handle": "miss" },
+    { "src": "^/?$", "dest": "subscription-manager/build/index.html" }
+  ]
+}
