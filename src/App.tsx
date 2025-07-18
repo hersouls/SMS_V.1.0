@@ -925,7 +925,7 @@ const SubscriptionApp = () => {
                       {events.slice(0, 2).map((event) => (
                         <button
                           key={event.id}
-                          onClick={() => {
+            onClick={() => {
                             handleEditSubscription(event.subscription);
                           }}
                           className="w-full flex items-center gap-1 p-1 rounded text-xs hover:opacity-80 transition-opacity duration-200"
@@ -951,7 +951,7 @@ const SubscriptionApp = () => {
                             ) : (
                               event.icon
                             )}
-                          </button>
+          </button>
                           <span className="truncate font-medium text-left" style={{ color: event.color }}>
                             {event.name}
                             {/* event.isPaymentDay && <span className="text-[10px] ml-1">(결제)</span> */}
@@ -1021,10 +1021,10 @@ const SubscriptionApp = () => {
                     >
                       <span className="sr-only">닫기</span>
                       <XMarkIcon className="w-5 h-5" />
-                    </button>
-                  </div>
-                </div>
-              </div>
+            </button>
+          </div>
+        </div>
+      </div>
             </div>
           </Transition>
         </div>
@@ -1170,8 +1170,8 @@ const SubscriptionApp = () => {
           {/* 구독 상세 정보 */}
           <div className="bg-white rounded-2xl p-6 shadow-md mb-6">
         <div className="flex items-center gap-4 mb-6">
-              <button
-                onClick={() => {
+          <button 
+            onClick={() => {
                   if (selectedSubscription.url) {
                     window.open(selectedSubscription.url, '_blank', 'noopener,noreferrer');
                   }
@@ -1189,25 +1189,25 @@ const SubscriptionApp = () => {
                 ) : (
                   selectedSubscription.icon
                 )}
-              </button>
+          </button>
               <div>
                 <h2 className="text-2xl font-bold text-gray-900 mb-1">
                   {selectedSubscription.name}
                 </h2>
                 <p className="text-gray-500">{selectedSubscription.category}</p>
               </div>
-            </div>
+        </div>
 
             <div className="space-y-4">
               <div className="flex justify-between items-center py-3 border-b border-gray-100">
                 <div className="flex items-center gap-2">
                   <Banknote className="w-5 h-5 text-gray-600" />
                   <span className="text-gray-700 font-medium">월 구독료</span>
-                </div>
+            </div>
                 <span className="text-2xl font-bold text-gray-900">
                   ₩{Math.round(convertToKRW(selectedSubscription.price, selectedSubscription.currency)).toLocaleString()}
                 </span>
-              </div>
+          </div>
 
               <div className="flex justify-between items-center py-3 border-b border-gray-100">
                 <div className="flex items-center gap-2">
@@ -1755,14 +1755,14 @@ const SubscriptionApp = () => {
                     <option value="USD">달러</option>
                     <option value="KRW">원화</option>
                   </select>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={customService.price}
-                    onChange={(e) => handleCustomInput('price', e.target.value)}
+                <input
+                  type="number"
+                  step="0.01"
+                  value={customService.price}
+                  onChange={(e) => handleCustomInput('price', e.target.value)}
                     className="flex-1 px-4 py-3 bg-gray-50 rounded-xl border-0 focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-900 text-right"
-                    placeholder="0.00"
-                  />
+                  placeholder="0.00"
+                />
                 </div>
               </div>
 
