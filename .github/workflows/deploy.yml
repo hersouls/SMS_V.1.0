@@ -30,7 +30,7 @@ jobs:
       - name: Add SPA fallback (404.html)
         run: cp index.html 404.html
         working-directory: subscription-manager/build
-      - uses: actions/upload-pages-artifact@v2
+      - uses: actions/upload-pages-artifact@v3
         with:
           path: subscription-manager/build
 
@@ -42,4 +42,4 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v2
+        uses: actions/deploy-pages@v4
