@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Search, Check, Calendar, DollarSign, Tag, Bell, User, Home, Menu, Plus, Edit2, Trash2, Upload, Image, Settings, ChevronLeft, ChevronRight, CreditCard, Globe, Banknote, CalendarRange } from 'lucide-react';
 import { Transition } from '@headlessui/react';
 import { CheckCircleIcon, XMarkIcon, CheckIcon, HandThumbUpIcon, UserIcon, PhotoIcon, UserCircleIcon } from '@heroicons/react/24/outline';
+import { useSupabase } from './contexts/SupabaseContext';
+import { LoginScreen } from './components/LoginScreen';
+import { SupabaseTest } from './components/SupabaseTest';
 
 interface Subscription {
   id: number;
@@ -66,7 +69,9 @@ interface Profile {
 }
 
 const SubscriptionApp = () => {
-  const [currentScreen, setCurrentScreen] = useState<'main' | 'add' | 'manage' | 'detail' | 'notifications' | 'alarm-history' | 'profile'>('main');
+  const { user, profile: supabaseProfile, loading: authLoading } = useSupabase();
+  const [currentScreen, setCurrentScreen] = useState<'main' | 'add' | 'manage' | 'detail' | 'notifications' | 'alarm-history' | 'profile' | 'supabase-test'>('main');
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null);
   const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -90,6 +95,15 @@ const SubscriptionApp = () => {
     
     return () => clearInterval(interval);
   }, []);
+
+  // 인증 상태 변경 감지
+  useEffect(() => {
+    if (user && !authLoading) {
+      setIsLoggedIn(true);
+    } else if (!user && !authLoading) {
+      setIsLoggedIn(false);
+    }
+  }, [user, authLoading]);
   
   const [alarmHistory, setAlarmHistory] = useState<AlarmHistory[]>([
     {
@@ -684,6 +698,25 @@ const SubscriptionApp = () => {
     setCurrentScreen('main');
   };
 
+  // 로딩 중이거나 로그인하지 않은 경우
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-blue-900 via-blue-800 to-blue-700 flex items-center justify-center">
+        <div className="text-white text-xl">로딩 중...</div>
+      </div>
+    );
+  }
+
+  // 로그인하지 않은 경우 로그인 화면 표시
+  if (!isLoggedIn) {
+    return <LoginScreen onLoginSuccess={() => setIsLoggedIn(true)} />;
+  }
+
+  // Supabase 테스트 화면
+  if (currentScreen === 'supabase-test') {
+    return <SupabaseTest />;
+  }
+
   // 공통 헤더 컴포넌트
   const CommonHeader = () => (
         <div className="relative px-4 pt-8 pb-8">
@@ -1030,16 +1063,30 @@ const SubscriptionApp = () => {
         </div>
       </div>
 
-      {/* 오른쪽 하단 고정 구독 추가 버튼 */}
-      <button
-        onClick={() => {
-          setCurrentScreen('add');
-          resetForm();
-        }}
-        className="fixed bottom-20 right-4 rounded-full bg-indigo-600 p-3 text-white shadow-lg hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 z-40"
-      >
-        <Plus className="w-6 h-6" />
-      </button>
+      {/* 오른쪽 하단 고정 버튼들 */}
+      <div className="fixed bottom-20 right-4 flex flex-col gap-3 z-40">
+        {/* Supabase 테스트 버튼 */}
+        <button
+          onClick={() => setCurrentScreen('supabase-test')}
+          className="rounded-full bg-green-600 p-3 text-white shadow-lg hover:bg-green-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600"
+          title="Supabase 테스트"
+        >
+          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+          </svg>
+        </button>
+        
+        {/* 구독 추가 버튼 */}
+        <button
+          onClick={() => {
+            setCurrentScreen('add');
+            resetForm();
+          }}
+          className="rounded-full bg-indigo-600 p-3 text-white shadow-lg hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+        >
+          <Plus className="w-6 h-6" />
+        </button>
+      </div>
       </>
     );
   }
