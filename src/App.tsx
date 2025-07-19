@@ -69,7 +69,7 @@ interface Profile {
 }
 
 const SubscriptionApp = () => {
-  const { user, profile: supabaseProfile, loading: authLoading, signOut } = useSupabase();
+  const { user, profile: supabaseProfile, loading: authLoading, signOut, supabase } = useSupabase();
   const [currentScreen, setCurrentScreen] = useState<'main' | 'add' | 'manage' | 'detail' | 'notifications' | 'alarm-history' | 'profile' | 'supabase-test'>('main');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null);
@@ -290,30 +290,68 @@ const SubscriptionApp = () => {
     }));
   };
 
-  const handleAddSubscription = () => {
-    if (!customService.name || !customService.price) return;
+  const handleAddSubscription = async () => {
+    if (!customService.name || !customService.price || !user) return;
     
-    const newSubscription: Subscription = {
-      id: Date.now(),
-      name: customService.name,
-      icon: '📱',
-      iconImage: customService.iconImage,
-      price: parseFloat(customService.price),
-      currency: customService.currency,
-      renewDate: customService.renewalDate,
-      startDate: customService.startDate || new Date().toISOString().split('T')[0], // 구독 시작일 설정
-      paymentDate: customService.paymentDate || new Date(customService.renewalDate).getDate().toString(), // 결재일 설정
-      paymentCard: customService.paymentCard, // 결제카드 설정
-      url: customService.url, // URL 설정
-      color: '#6C63FF',
-      category: customService.category
-    };
+    try {
+      // Supabase 데이터베이스에 저장할 구독 데이터
+      const subscriptionData = {
+        user_id: user.id,
+        name: customService.name,
+        icon: '📱',
+        icon_image_url: customService.iconImage,
+        price: parseFloat(customService.price),
+        currency: customService.currency as 'USD' | 'KRW' | 'EUR' | 'JPY',
+        renew_date: customService.renewalDate,
+        start_date: customService.startDate || new Date().toISOString().split('T')[0],
+        payment_date: customService.paymentDate ? parseInt(customService.paymentDate) : new Date(customService.renewalDate).getDate(),
+        payment_card: customService.paymentCard,
+        url: customService.url,
+        color: '#6C63FF',
+        category: customService.category,
+        is_active: true
+      };
 
-    setSubscriptions(prev => [...prev, newSubscription]);
-    addNotification('success', '구독 추가 완료', `${customService.name} 구독이 성공적으로 추가되었습니다.`);
-    addAlarmHistory('subscription_added', '구독이 추가되었습니다', customService.name, newSubscription.id);
-    setCurrentScreen('main');
-    resetForm();
+      // Supabase에 데이터 저장
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .insert(subscriptionData)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Database error:', error);
+        addNotification('error', '구독 추가 실패', `데이터베이스 오류: ${error.message}`);
+        return;
+      }
+
+      // 로컬 상태에도 추가 (UI 업데이트용)
+      const newSubscription: Subscription = {
+        id: Date.now(), // 로컬 ID (UI용)
+        name: customService.name,
+        icon: '📱',
+        iconImage: customService.iconImage,
+        price: parseFloat(customService.price),
+        currency: customService.currency,
+        renewDate: customService.renewalDate,
+        startDate: customService.startDate || new Date().toISOString().split('T')[0],
+        paymentDate: customService.paymentDate || new Date(customService.renewalDate).getDate().toString(),
+        paymentCard: customService.paymentCard,
+        url: customService.url,
+        color: '#6C63FF',
+        category: customService.category
+      };
+
+      setSubscriptions(prev => [...prev, newSubscription]);
+      addNotification('success', '구독 추가 완료', `${customService.name} 구독이 성공적으로 추가되었습니다.`);
+      addAlarmHistory('subscription_added', '구독이 추가되었습니다', customService.name, newSubscription.id);
+      setCurrentScreen('main');
+      resetForm();
+
+    } catch (error) {
+      console.error('Unexpected error:', error);
+      addNotification('error', '구독 추가 실패', '예상치 못한 오류가 발생했습니다.');
+    }
   };
 
   const handleEditSubscription = (subscription: Subscription) => {
