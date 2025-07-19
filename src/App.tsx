@@ -8,6 +8,7 @@ import { SupabaseTest } from './components/SupabaseTest';
 
 interface Subscription {
   id: number;
+  databaseId?: string; // Supabase 데이터베이스의 실제 UUID
   name: string;
   icon: string;
   iconImage?: string; // 이미지 URL 추가
@@ -96,14 +97,61 @@ const SubscriptionApp = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // 인증 상태 변경 감지
+  // 인증 상태 변경 감지 및 데이터 로딩
   useEffect(() => {
     if (user && !authLoading) {
       setIsLoggedIn(true);
+      loadUserSubscriptions();
     } else if (!user && !authLoading) {
       setIsLoggedIn(false);
+      setSubscriptions([]); // 로그아웃 시 구독 데이터 초기화
     }
   }, [user, authLoading]);
+
+  // 사용자의 구독 데이터를 Supabase에서 불러오는 함수
+  const loadUserSubscriptions = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error loading subscriptions:', error);
+        addNotification('error', '데이터 로딩 실패', '구독 정보를 불러오는데 실패했습니다.');
+        return;
+      }
+
+      // Supabase 데이터를 로컬 Subscription 형태로 변환
+      const localSubscriptions: Subscription[] = data.map((sub, index) => ({
+        id: Date.now() + index, // 로컬 ID 생성
+        databaseId: sub.id, // Supabase 데이터베이스 ID
+        name: sub.name,
+        icon: sub.icon || '📱',
+        iconImage: sub.icon_image_url,
+        price: sub.price,
+        currency: sub.currency,
+        renewDate: sub.renew_date,
+        startDate: sub.start_date,
+        paymentDate: sub.payment_date?.toString(),
+        paymentCard: sub.payment_card,
+        url: sub.url,
+        color: sub.color,
+        category: sub.category
+      }));
+
+      setSubscriptions(localSubscriptions);
+      console.log(`Loaded ${localSubscriptions.length} subscriptions from database`);
+
+    } catch (error) {
+      console.error('Unexpected error loading subscriptions:', error);
+      addNotification('error', '데이터 로딩 실패', '예상치 못한 오류가 발생했습니다.');
+    }
+  };
   
   const [alarmHistory, setAlarmHistory] = useState<AlarmHistory[]>([
     {
@@ -328,6 +376,7 @@ const SubscriptionApp = () => {
       // 로컬 상태에도 추가 (UI 업데이트용)
       const newSubscription: Subscription = {
         id: Date.now(), // 로컬 ID (UI용)
+        databaseId: data.id, // Supabase 데이터베이스 ID
         name: customService.name,
         icon: '📱',
         iconImage: customService.iconImage,
@@ -372,39 +421,98 @@ const SubscriptionApp = () => {
     setCurrentScreen('add');
   };
 
-  const handleUpdateSubscription = () => {
-    if (!customService.name || !customService.price || !editingSubscription) return;
+  const handleUpdateSubscription = async () => {
+    if (!customService.name || !customService.price || !editingSubscription || !user) return;
 
-    setSubscriptions(prev => prev.map(sub => 
-      sub.id === editingSubscription.id 
-        ? {
-            ...sub,
-            name: customService.name,
-            price: parseFloat(customService.price),
-            renewDate: customService.renewalDate,
-            startDate: customService.startDate,
-            paymentDate: customService.paymentDate,
-            paymentCard: customService.paymentCard,
-            url: customService.url,
-            category: customService.category,
-            iconImage: customService.iconImage
-          }
-        : sub
-    ));
-    
-    addNotification('success', '구독 수정 완료', `${customService.name} 구독이 성공적으로 수정되었습니다.`);
-    addAlarmHistory('subscription_updated', '구독이 수정되었습니다', customService.name, editingSubscription.id);
-    setCurrentScreen('main');
-    setEditingSubscription(null);
-    resetForm();
+    try {
+      // Supabase 데이터베이스에서 업데이트
+      if (editingSubscription.databaseId) {
+        const updateData = {
+          name: customService.name,
+          price: parseFloat(customService.price),
+          currency: customService.currency as 'USD' | 'KRW' | 'EUR' | 'JPY',
+          renew_date: customService.renewalDate,
+          start_date: customService.startDate,
+          payment_date: customService.paymentDate ? parseInt(customService.paymentDate) : null,
+          payment_card: customService.paymentCard,
+          url: customService.url,
+          category: customService.category,
+          icon_image_url: customService.iconImage,
+          updated_at: new Date().toISOString()
+        };
+
+        const { error } = await supabase
+          .from('subscriptions')
+          .update(updateData)
+          .eq('id', editingSubscription.databaseId);
+
+        if (error) {
+          console.error('Database update error:', error);
+          addNotification('error', '구독 수정 실패', `데이터베이스 오류: ${error.message}`);
+          return;
+        }
+      }
+
+      // 로컬 상태 업데이트
+      setSubscriptions(prev => prev.map(sub => 
+        sub.id === editingSubscription.id 
+          ? {
+              ...sub,
+              name: customService.name,
+              price: parseFloat(customService.price),
+              currency: customService.currency,
+              renewDate: customService.renewalDate,
+              startDate: customService.startDate,
+              paymentDate: customService.paymentDate,
+              paymentCard: customService.paymentCard,
+              url: customService.url,
+              category: customService.category,
+              iconImage: customService.iconImage
+            }
+          : sub
+      ));
+      
+      addNotification('success', '구독 수정 완료', `${customService.name} 구독이 성공적으로 수정되었습니다.`);
+      addAlarmHistory('subscription_updated', '구독이 수정되었습니다', customService.name, editingSubscription.id);
+      setCurrentScreen('main');
+      setEditingSubscription(null);
+      resetForm();
+
+    } catch (error) {
+      console.error('Unexpected update error:', error);
+      addNotification('error', '구독 수정 실패', '예상치 못한 오류가 발생했습니다.');
+    }
   };
 
-  const handleDeleteSubscription = (id: number) => {
+  const handleDeleteSubscription = async (id: number) => {
     const subscription = subscriptions.find(sub => sub.id === id);
-    if (subscription && window.confirm(`"${subscription.name}" 구독을 삭제하시겠습니까?`)) {
-    setSubscriptions(prev => prev.filter(sub => sub.id !== id));
+    if (!subscription || !window.confirm(`"${subscription.name}" 구독을 삭제하시겠습니까?`)) {
+      return;
+    }
+
+    try {
+      // Supabase에서 삭제 (is_active를 false로 설정하여 소프트 삭제)
+      if (subscription.databaseId) {
+        const { error } = await supabase
+          .from('subscriptions')
+          .update({ is_active: false })
+          .eq('id', subscription.databaseId);
+
+        if (error) {
+          console.error('Database delete error:', error);
+          addNotification('error', '구독 삭제 실패', `데이터베이스 오류: ${error.message}`);
+          return;
+        }
+      }
+
+      // 로컬 상태에서 제거
+      setSubscriptions(prev => prev.filter(sub => sub.id !== id));
       addNotification('info', '구독 삭제 완료', `${subscription.name} 구독이 삭제되었습니다.`);
       addAlarmHistory('subscription_deleted', '구독이 삭제되었습니다', subscription.name, id);
+
+    } catch (error) {
+      console.error('Unexpected delete error:', error);
+      addNotification('error', '구독 삭제 실패', '예상치 못한 오류가 발생했습니다.');
     }
   };
 
