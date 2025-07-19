@@ -102,11 +102,42 @@ const SubscriptionApp = () => {
     if (user && !authLoading) {
       setIsLoggedIn(true);
       loadUserSubscriptions();
+      
+      // Supabase 프로필이 있으면 로컬 프로필과 동기화
+      if (supabaseProfile) {
+        setProfile({
+          username: supabaseProfile.username || '',
+          firstName: supabaseProfile.first_name || '',
+          lastName: supabaseProfile.last_name || '',
+          email: supabaseProfile.email || user.email || '',
+          photo: supabaseProfile.photo_url || '',
+          coverPhoto: supabaseProfile.cover_photo_url || ''
+        });
+      } else if (user.user_metadata) {
+        // Supabase 프로필이 없으면 user_metadata에서 기본 정보 설정
+        const fullName = user.user_metadata.full_name || user.user_metadata.name || '';
+        const nameParts = fullName.split(' ');
+        setProfile({
+          username: user.user_metadata.preferred_username || '',
+          firstName: nameParts[0] || '',
+          lastName: nameParts.slice(1).join(' ') || '',
+          email: user.email || '',
+          photo: user.user_metadata.avatar_url || user.user_metadata.picture || '',
+          coverPhoto: ''
+        });
+      }
     } else if (!user && !authLoading) {
       setIsLoggedIn(false);
       setSubscriptions([]); // 로그아웃 시 구독 데이터 초기화
+      // 프로필 초기화
+      setProfile({
+        username: '',
+        firstName: '',
+        lastName: '',
+        email: ''
+      });
     }
-  }, [user, authLoading]);
+  }, [user, authLoading, supabaseProfile]);
 
   // 사용자의 구독 데이터를 Supabase에서 불러오는 함수
   const loadUserSubscriptions = async () => {
