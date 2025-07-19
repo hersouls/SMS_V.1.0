@@ -84,6 +84,12 @@ export const SupabaseProvider: React.FC<SupabaseProviderProps> = ({ children }) 
         .single();
 
       if (error) {
+        // 프로필이 존재하지 않는 경우 (PGRST116 에러)
+        if (error.code === 'PGRST116') {
+          console.log('Profile not found, creating new profile...');
+          await createProfile(userId);
+          return;
+        }
         console.error('Error fetching profile:', error);
         return;
       }
@@ -91,6 +97,35 @@ export const SupabaseProvider: React.FC<SupabaseProviderProps> = ({ children }) 
       setProfile(data);
     } catch (error) {
       console.error('Error fetching profile:', error);
+    }
+  };
+
+  const createProfile = async (userId: string) => {
+    try {
+      const userEmail = user?.email || '';
+      const userName = user?.user_metadata?.full_name || '';
+      const photoUrl = user?.user_metadata?.avatar_url || '';
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .insert({
+          id: userId,
+          email: userEmail,
+          first_name: userName,
+          photo_url: photoUrl,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating profile:', error);
+        return;
+      }
+
+      console.log('Profile created successfully:', data);
+      setProfile(data);
+    } catch (error) {
+      console.error('Error creating profile:', error);
     }
   };
 
