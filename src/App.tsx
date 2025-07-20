@@ -38,7 +38,7 @@ interface AlarmHistory {
   datetime: string;
   icon: React.ComponentType<any>;
   iconBackground: string;
-  subscriptionId?: number;
+  subscriptionId?: string;
   subscriptionImage?: string;
 }
 
@@ -99,6 +99,7 @@ const SubscriptionApp = () => {
   const [exchangeRateLoading, setExchangeRateLoading] = useState(false);
   const [isAddingSubscription, setIsAddingSubscription] = useState(false);
   const [isUpdatingSubscription, setIsUpdatingSubscription] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
 
   const [customService, setCustomService] = useState<CustomService>({
     name: '',
@@ -237,7 +238,7 @@ const SubscriptionApp = () => {
         currency: sub.currency as 'KRW' | 'USD' | 'EUR' | 'JPY',
         renewDate: sub.renew_date,
         startDate: sub.start_date || '',
-        paymentDate: sub.payment_date?.toString() || '',
+        paymentDate: (sub.payment_date !== null && sub.payment_date !== undefined) ? sub.payment_date.toString() : '',
         paymentCard: sub.payment_card || '',
         url: sub.url || '',
         color: sub.color || '#000000',
@@ -275,7 +276,7 @@ const SubscriptionApp = () => {
           datetime: createdAt.toISOString().split('T')[0],
           icon: getAlarmIcon(alarm.type),
           iconBackground: getAlarmIconBackground(alarm.type),
-          subscriptionId: alarm.subscription_id ? parseInt(alarm.subscription_id) : undefined,
+          subscriptionId: alarm.subscription_id || undefined,
           subscriptionImage: alarm.subscription_image_url
         };
       });
@@ -425,7 +426,7 @@ const SubscriptionApp = () => {
   };
 
   // 13. Supabase 알람 히스토리 추가
-  const addAlarmHistory = async (type: AlarmHistory['type'], content: string, target: string, subscriptionId?: number) => {
+  const addAlarmHistory = async (type: AlarmHistory['type'], content: string, target: string, subscriptionId?: string) => {
     if (!user) return;
     try {
       const { data, error } = await supabase
@@ -435,7 +436,7 @@ const SubscriptionApp = () => {
           type,
           content,
           target,
-          subscription_id: subscriptionId ? subscriptionId.toString() : null
+          subscription_id: subscriptionId || null
         })
         .select()
         .single();
@@ -453,7 +454,7 @@ const SubscriptionApp = () => {
         datetime: createdAt.toISOString().split('T')[0],
         icon: getAlarmIcon(data.type),
         iconBackground: getAlarmIconBackground(data.type),
-        subscriptionId: data.subscription_id ? parseInt(data.subscription_id) : undefined,
+        subscriptionId: data.subscription_id || undefined,
         subscriptionImage: data.subscription_image_url
       };
       setAlarmHistory(prev => [newAlarm, ...prev]);
@@ -526,7 +527,21 @@ const SubscriptionApp = () => {
           currency: customService.currency,
           renew_date: customService.renewalDate,
           start_date: customService.startDate || new Date().toISOString().split('T')[0],
-          payment_date: parseInt(customService.paymentDate) || new Date(customService.renewalDate).getDate(),
+          payment_date: (() => {
+            const parsedDate = parseInt(customService.paymentDate);
+            if (!isNaN(parsedDate) && parsedDate >= 1 && parsedDate <= 31) {
+              return parsedDate;
+            }
+            try {
+              const renewDate = new Date(customService.renewalDate);
+              if (!isNaN(renewDate.getTime())) {
+                return renewDate.getDate();
+              }
+            } catch (e) {
+              // Do nothing
+            }
+            return 1; // Default to 1st of the month
+          })(),
           payment_card: customService.paymentCard,
           url: customService.url,
           color: '#6C63FF',
@@ -561,15 +576,31 @@ const SubscriptionApp = () => {
       };
 
       setSubscriptions(prev => [localSubscription, ...prev]);
-      await addNotification('success', '구독 추가 완료', `${customService.name} 구독이 성공적으로 추가되었습니다.`);
-      await addAlarmHistory('subscription_added', '구독이 추가되었습니다', customService.name, localSubscription.id);
+      
+      // 알림과 알람 히스토리는 실패해도 구독 추가는 성공으로 처리
+      try {
+        await addNotification('success', '구독 추가 완료', `${customService.name} 구독이 성공적으로 추가되었습니다.`);
+      } catch (notificationError) {
+        console.error('Error adding notification:', notificationError);
+      }
+      
+      try {
+        await addAlarmHistory('subscription_added', '구독이 추가되었습니다', customService.name, data.id);
+      } catch (alarmError) {
+        console.error('Error adding alarm history:', alarmError);
+      }
+      
       setCurrentScreen('main');
       resetForm();
-      setIsAddingSubscription(false);
     } catch (error) {
       console.error('Error adding subscription:', error);
       const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
-      await addNotification('error', '구독 추가 실패', `구독 추가 중 오류가 발생했습니다: ${errorMessage}`);
+      try {
+        await addNotification('error', '구독 추가 실패', `구독 추가 중 오류가 발생했습니다: ${errorMessage}`);
+      } catch (notificationError) {
+        console.error('Error adding error notification:', notificationError);
+      }
+    } finally {
       setIsAddingSubscription(false);
     }
   };
@@ -606,7 +637,21 @@ const SubscriptionApp = () => {
           currency: customService.currency,
           renew_date: customService.renewalDate,
           start_date: customService.startDate,
-          payment_date: parseInt(customService.paymentDate) || new Date(customService.renewalDate).getDate(),
+          payment_date: (() => {
+            const parsedDate = parseInt(customService.paymentDate);
+            if (!isNaN(parsedDate) && parsedDate >= 1 && parsedDate <= 31) {
+              return parsedDate;
+            }
+            try {
+              const renewDate = new Date(customService.renewalDate);
+              if (!isNaN(renewDate.getTime())) {
+                return renewDate.getDate();
+              }
+            } catch (e) {
+              // Do nothing
+            }
+            return 1; // Default to 1st of the month
+          })(),
           payment_card: customService.paymentCard,
           url: customService.url,
           category: customService.category,
@@ -640,16 +685,31 @@ const SubscriptionApp = () => {
           : sub
       ));
       
-      await addNotification('success', '구독 수정 완료', `${customService.name} 구독이 성공적으로 수정되었습니다.`);
-      await addAlarmHistory('subscription_updated', '구독이 수정되었습니다', customService.name, editingSubscription.id);
+      // 알림과 알람 히스토리는 실패해도 구독 수정은 성공으로 처리
+      try {
+        await addNotification('success', '구독 수정 완료', `${customService.name} 구독이 성공적으로 수정되었습니다.`);
+      } catch (notificationError) {
+        console.error('Error adding notification:', notificationError);
+      }
+      
+      try {
+        await addAlarmHistory('subscription_updated', '구독이 수정되었습니다', customService.name, editingSubscription.databaseId);
+      } catch (alarmError) {
+        console.error('Error adding alarm history:', alarmError);
+      }
+      
       setCurrentScreen('main');
       setEditingSubscription(null);
       resetForm();
-      setIsUpdatingSubscription(false);
     } catch (error) {
       console.error('Error updating subscription:', error);
       const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
-      await addNotification('error', '구독 수정 실패', `구독 수정 중 오류가 발생했습니다: ${errorMessage}`);
+      try {
+        await addNotification('error', '구독 수정 실패', `구독 수정 중 오류가 발생했습니다: ${errorMessage}`);
+      } catch (notificationError) {
+        console.error('Error adding error notification:', notificationError);
+      }
+    } finally {
       setIsUpdatingSubscription(false);
     }
   };
@@ -673,11 +733,26 @@ const SubscriptionApp = () => {
         }
 
         setSubscriptions(prev => prev.filter(sub => sub.id !== id));
-        await addNotification('info', '구독 삭제 완료', `${subscription.name} 구독이 삭제되었습니다.`);
-        await addAlarmHistory('subscription_deleted', '구독이 삭제되었습니다', subscription.name, id);
+        
+        // 알림과 알람 히스토리는 실패해도 구독 삭제는 성공으로 처리
+        try {
+          await addNotification('info', '구독 삭제 완료', `${subscription.name} 구독이 삭제되었습니다.`);
+        } catch (notificationError) {
+          console.error('Error adding notification:', notificationError);
+        }
+        
+        try {
+          await addAlarmHistory('subscription_deleted', '구독이 삭제되었습니다', subscription.name, subscription.databaseId);
+        } catch (alarmError) {
+          console.error('Error adding alarm history:', alarmError);
+        }
       } catch (error) {
         console.error('Error deleting subscription:', error);
-        await addNotification('error', '구독 삭제 실패', '구독 삭제 중 오류가 발생했습니다.');
+        try {
+          await addNotification('error', '구독 삭제 실패', '구독 삭제 중 오류가 발생했습니다.');
+        } catch (notificationError) {
+          console.error('Error adding error notification:', notificationError);
+        }
       }
     }
   };
@@ -1001,12 +1076,17 @@ const SubscriptionApp = () => {
   };
 
   const handleProfileSave = async () => {
+    if (isSavingProfile) return;
+    
+    setIsSavingProfile(true);
     try {
       await updateProfile(profile);
       setCurrentScreen('main');
     } catch (error) {
       console.error('Error saving profile:', error);
       await addNotification('error', '프로필 저장 실패', '프로필 저장 중 오류가 발생했습니다.');
+    } finally {
+      setIsSavingProfile(false);
     }
   };
 
@@ -2080,9 +2160,24 @@ const SubscriptionApp = () => {
                 </button>
                 <button
                   type="submit"
-                  className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  disabled={isSavingProfile}
+                  className={`rounded-lg px-4 py-2 text-sm font-semibold text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center justify-center ${
+                    isSavingProfile 
+                      ? 'bg-gray-400 cursor-not-allowed' 
+                      : 'bg-blue-600 hover:bg-blue-500'
+                  }`}
                 >
-                  저장
+                  {isSavingProfile ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      저장 중...
+                    </>
+                  ) : (
+                    '저장'
+                  )}
                 </button>
               </div>
             </div>
