@@ -101,7 +101,7 @@ const SubscriptionApp = () => {
   useEffect(() => {
     if (user && !authLoading) {
       setIsLoggedIn(true);
-      loadUserSubscriptions();
+      loadUserData();
       
       // Supabase 프로필이 있으면 로컬 프로필과 동기화
       if (supabaseProfile) {
@@ -153,7 +153,7 @@ const SubscriptionApp = () => {
 
       if (error) {
         console.error('Error loading subscriptions:', error);
-        addNotification('error', '데이터 로딩 실패', '구독 정보를 불러오는데 실패했습니다.');
+        await addNotification('error', '데이터 로딩 실패', '구독 정보를 불러오는데 실패했습니다.');
         return;
       }
 
@@ -180,7 +180,115 @@ const SubscriptionApp = () => {
 
     } catch (error) {
       console.error('Unexpected error loading subscriptions:', error);
-      addNotification('error', '데이터 로딩 실패', '예상치 못한 오류가 발생했습니다.');
+              await addNotification('error', '데이터 로딩 실패', '예상치 못한 오류가 발생했습니다.');
+    }
+  };
+
+  // 사용자의 모든 데이터를 로드하는 함수
+  const loadUserData = async () => {
+    if (!user) return;
+
+    try {
+      await Promise.all([
+        loadUserSubscriptions(),
+        loadUserNotifications(),
+        loadUserAlarmHistory()
+      ]);
+    } catch (error) {
+      console.error('Error loading user data:', error);
+    }
+  };
+
+  // 사용자의 알림 데이터를 Supabase에서 불러오는 함수
+  const loadUserNotifications = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (error) {
+        console.error('Error loading notifications:', error);
+        return;
+      }
+
+      const localNotifications: Notification[] = data.map(notif => ({
+        id: notif.id,
+        type: notif.type as 'success' | 'warning' | 'error' | 'info',
+        title: notif.title,
+        message: notif.message,
+        timestamp: new Date(notif.created_at)
+      }));
+
+      setNotifications(localNotifications);
+    } catch (error) {
+      console.error('Unexpected error loading notifications:', error);
+    }
+  };
+
+  // 사용자의 알림 히스토리를 Supabase에서 불러오는 함수
+  const loadUserAlarmHistory = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('alarm_history')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      if (error) {
+        console.error('Error loading alarm history:', error);
+        return;
+      }
+
+      const localAlarmHistory: AlarmHistory[] = data.map(alarm => {
+        let icon, iconBackground;
+        switch (alarm.type) {
+          case 'subscription_added':
+            icon = CheckIcon;
+            iconBackground = 'bg-green-500';
+            break;
+          case 'subscription_updated':
+            icon = HandThumbUpIcon;
+            iconBackground = 'bg-blue-500';
+            break;
+          case 'subscription_deleted':
+            icon = UserIcon;
+            iconBackground = 'bg-gray-500';
+            break;
+          case 'renewal_reminder':
+            icon = CheckIcon;
+            iconBackground = 'bg-yellow-500';
+            break;
+          case 'payment_due':
+            icon = HandThumbUpIcon;
+            iconBackground = 'bg-red-500';
+            break;
+        }
+
+        return {
+          id: alarm.id,
+          type: alarm.type as AlarmHistory['type'],
+          content: alarm.content,
+          target: alarm.target,
+          date: new Date(alarm.created_at).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' }),
+          datetime: alarm.created_at,
+          icon,
+          iconBackground: iconBackground || 'bg-gray-500',
+          subscriptionId: parseInt(alarm.subscription_id || '0') || undefined,
+          subscriptionImage: alarm.subscription_image_url || undefined
+        };
+      });
+
+      setAlarmHistory(localAlarmHistory);
+    } catch (error) {
+      console.error('Unexpected error loading alarm history:', error);
     }
   };
   
@@ -400,7 +508,7 @@ const SubscriptionApp = () => {
 
       if (error) {
         console.error('Database error:', error);
-        addNotification('error', '구독 추가 실패', `데이터베이스 오류: ${error.message}`);
+        await addNotification('error', '구독 추가 실패', `데이터베이스 오류: ${error.message}`);
         return;
       }
 
@@ -423,14 +531,14 @@ const SubscriptionApp = () => {
       };
 
       setSubscriptions(prev => [...prev, newSubscription]);
-      addNotification('success', '구독 추가 완료', `${customService.name} 구독이 성공적으로 추가되었습니다.`);
-      addAlarmHistory('subscription_added', '구독이 추가되었습니다', customService.name, newSubscription.id);
+      await addNotification('success', '구독 추가 완료', `${customService.name} 구독이 성공적으로 추가되었습니다.`);
+      await addAlarmHistory('subscription_added', '구독이 추가되었습니다', customService.name, newSubscription.id);
       setCurrentScreen('main');
       resetForm();
 
     } catch (error) {
       console.error('Unexpected error:', error);
-      addNotification('error', '구독 추가 실패', '예상치 못한 오류가 발생했습니다.');
+      await addNotification('error', '구독 추가 실패', '예상치 못한 오류가 발생했습니다.');
     }
   };
 
@@ -479,7 +587,7 @@ const SubscriptionApp = () => {
 
         if (error) {
           console.error('Database update error:', error);
-          addNotification('error', '구독 수정 실패', `데이터베이스 오류: ${error.message}`);
+          await addNotification('error', '구독 수정 실패', `데이터베이스 오류: ${error.message}`);
           return;
         }
       }
@@ -503,15 +611,15 @@ const SubscriptionApp = () => {
           : sub
       ));
       
-      addNotification('success', '구독 수정 완료', `${customService.name} 구독이 성공적으로 수정되었습니다.`);
-      addAlarmHistory('subscription_updated', '구독이 수정되었습니다', customService.name, editingSubscription.id);
+      await addNotification('success', '구독 수정 완료', `${customService.name} 구독이 성공적으로 수정되었습니다.`);
+      await addAlarmHistory('subscription_updated', '구독이 수정되었습니다', customService.name, editingSubscription.id);
       setCurrentScreen('main');
       setEditingSubscription(null);
       resetForm();
 
     } catch (error) {
       console.error('Unexpected update error:', error);
-      addNotification('error', '구독 수정 실패', '예상치 못한 오류가 발생했습니다.');
+      await addNotification('error', '구독 수정 실패', '예상치 못한 오류가 발생했습니다.');
     }
   };
 
@@ -531,19 +639,19 @@ const SubscriptionApp = () => {
 
         if (error) {
           console.error('Database delete error:', error);
-          addNotification('error', '구독 삭제 실패', `데이터베이스 오류: ${error.message}`);
+          await addNotification('error', '구독 삭제 실패', `데이터베이스 오류: ${error.message}`);
           return;
         }
       }
 
       // 로컬 상태에서 제거
       setSubscriptions(prev => prev.filter(sub => sub.id !== id));
-      addNotification('info', '구독 삭제 완료', `${subscription.name} 구독이 삭제되었습니다.`);
-      addAlarmHistory('subscription_deleted', '구독이 삭제되었습니다', subscription.name, id);
+      await addNotification('info', '구독 삭제 완료', `${subscription.name} 구독이 삭제되었습니다.`);
+      await addAlarmHistory('subscription_deleted', '구독이 삭제되었습니다', subscription.name, id);
 
     } catch (error) {
       console.error('Unexpected delete error:', error);
-      addNotification('error', '구독 삭제 실패', '예상치 못한 오류가 발생했습니다.');
+              await addNotification('error', '구독 삭제 실패', '예상치 못한 오류가 발생했습니다.');
     }
   };
 
@@ -634,7 +742,7 @@ const SubscriptionApp = () => {
   };
 
   // 알림 관련 함수들
-  const addNotification = (type: Notification['type'], title: string, message: string) => {
+  const addNotification = async (type: Notification['type'], title: string, message: string) => {
     const newNotification: Notification = {
       id: Date.now().toString(),
       type,
@@ -642,8 +750,30 @@ const SubscriptionApp = () => {
       message,
       timestamp: new Date()
     };
+    
+    // 로컬 상태 업데이트
     setNotifications(prev => [newNotification, ...prev]);
     setShowNotification(true);
+    
+    // 데이터베이스에 저장 (로그인된 경우에만)
+    if (user) {
+      try {
+        const { error } = await supabase
+          .from('notifications')
+          .insert({
+            user_id: user.id,
+            type,
+            title,
+            message,
+          });
+
+        if (error) {
+          console.error('Error saving notification:', error);
+        }
+      } catch (error) {
+        console.error('Unexpected error saving notification:', error);
+      }
+    }
     
     // 5초 후 자동으로 알림 숨기기
     setTimeout(() => {
@@ -679,7 +809,9 @@ const SubscriptionApp = () => {
   };
 
   // 알람 히스토리 관련 함수들
-  const addAlarmHistory = (type: AlarmHistory['type'], content: string, target: string, subscriptionId?: number) => {
+  const addAlarmHistory = async (type: AlarmHistory['type'], content: string, target: string, subscriptionId?: number) => {
+    if (!user) return;
+
     const subscription = subscriptionId ? subscriptions.find(sub => sub.id === subscriptionId) : null;
     
     let icon, iconBackground;
@@ -720,7 +852,28 @@ const SubscriptionApp = () => {
       subscriptionImage: subscription?.iconImage
     };
 
+    // 로컬 상태 업데이트
     setAlarmHistory(prev => [newAlarm, ...prev]);
+
+    // 데이터베이스에 저장
+    try {
+      const { error } = await supabase
+        .from('alarm_history')
+        .insert({
+          user_id: user.id,
+          type,
+          content,
+          target,
+          subscription_id: subscription?.databaseId || null,
+          subscription_image_url: subscription?.iconImage || null,
+        });
+
+      if (error) {
+        console.error('Error saving alarm history:', error);
+      }
+    } catch (error) {
+      console.error('Unexpected error saving alarm history:', error);
+    }
   };
 
   const classNames = (...classes: string[]) => {
@@ -866,8 +1019,8 @@ const SubscriptionApp = () => {
     }
   };
 
-  const handleProfileSave = () => {
-    addNotification('success', '프로필 저장 완료', '프로필이 성공적으로 저장되었습니다.');
+  const handleProfileSave = async () => {
+    await addNotification('success', '프로필 저장 완료', '프로필이 성공적으로 저장되었습니다.');
     setCurrentScreen('main');
   };
 
@@ -887,12 +1040,12 @@ const SubscriptionApp = () => {
     setIsLoggingOut(true);
     
     // 타임아웃 설정 (10초)
-    const timeoutId = setTimeout(() => {
+    const timeoutId = setTimeout(async () => {
       console.log('Logout timeout - forcing logout');
       setIsLoggedIn(false);
       setCurrentScreen('main');
       setIsLoggingOut(false);
-      addNotification('warning', '로그아웃 완료', '타임아웃으로 인해 로그아웃되었습니다.');
+      await addNotification('warning', '로그아웃 완료', '타임아웃으로 인해 로그아웃되었습니다.');
     }, 10000);
     
     try {
@@ -908,11 +1061,11 @@ const SubscriptionApp = () => {
         setIsLoggedIn(false);
         setIsLoggingOut(false);
       }, 100);
-      addNotification('success', '로그아웃 완료', '성공적으로 로그아웃되었습니다.');
+      await addNotification('success', '로그아웃 완료', '성공적으로 로그아웃되었습니다.');
     } catch (error) {
       clearTimeout(timeoutId);
       console.error('Logout error:', error);
-      addNotification('error', '로그아웃 실패', '로그아웃 중 오류가 발생했습니다.');
+      await addNotification('error', '로그아웃 실패', '로그아웃 중 오류가 발생했습니다.');
       setIsLoggingOut(false);
     }
   };
