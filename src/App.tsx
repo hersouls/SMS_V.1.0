@@ -159,9 +159,9 @@ const SubscriptionApp = () => {
         iconImage: sub.icon_image_url,
         price: sub.price,
         currency: sub.currency,
-        renewDate: sub.renew_date,
-        startDate: sub.start_date,
-        paymentDate: sub.payment_date?.toString()  || '',
+        renewDate: sub.renew_date ?? '',
+        startDate: sub.start_date ?? '',
+        paymentDate: sub.payment_date?.toString() ?? '',
         paymentCard: sub.payment_card,
         url: sub.url,
         color: sub.color,
@@ -276,15 +276,6 @@ const SubscriptionApp = () => {
     }
   }, [user, authLoading, supabaseProfile, loadUserSubscriptions, loadUserNotifications, loadUserAlarmHistory]);
 
-  // 3. 환율 정보 가져오기
-  useEffect(() => {
-    fetchExchangeRate();
-    const interval = setInterval(fetchExchangeRate, 60 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, [fetchExchangeRate]);
-
-  
-
   // 10. 환율 정보 가져오기
   const fetchExchangeRate = useCallback(async () => {
     // setExchangeRateLoading(true); // This line was removed as per the edit hint
@@ -299,6 +290,13 @@ const SubscriptionApp = () => {
         // setExchangeRateLoading(false); // This line was removed as per the edit hint
       }
     }, []);
+
+  // 3. 환율 정보 가져오기
+  useEffect(() => {
+    fetchExchangeRate();
+    const interval = setInterval(fetchExchangeRate, 60 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [fetchExchangeRate]);
 
   // Note: Handler functions are commented out as they are currently unused
   // TODO: Implement these functions when add/edit/delete functionality is needed
