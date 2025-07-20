@@ -54,7 +54,7 @@ interface Profile {
 
 // --- 컴포넌트 시작 ---
 const SubscriptionApp = () => {
-  const { user, profile: supabaseProfile, loading: authLoading, signOut, supabase } = useSupabase();
+  const { user, profile: supabaseProfile, loading: authLoading, signOut, supabase, updateProfile } = useSupabase();
 
   // User 상태 모니터링
   useEffect(() => {
@@ -136,25 +136,49 @@ const SubscriptionApp = () => {
     console.log('user:', user);
     
     // 유효성 검사
-    if (!customService.name?.trim() || !customService.price?.trim() || !user) {
-      console.log('Validation failed:', { 
-        name: customService.name, 
-        price: customService.price, 
-        user: !!user 
-      });
-      await addNotification('warning', '입력 확인', '모든 필수 정보를 입력해주세요.');
+    if (!customService.name?.trim()) {
+      console.log('Validation failed: name is empty');
+      await addNotification('warning', '입력 확인', '서비스명을 입력해주세요.');
+      return;
+    }
+    
+    if (!customService.price?.trim()) {
+      console.log('Validation failed: price is empty');
+      await addNotification('warning', '입력 확인', '가격을 입력해주세요.');
+      return;
+    }
+    
+    if (!user) {
+      console.log('Validation failed: user not logged in');
+      await addNotification('error', '로그인 필요', '로그인이 필요한 서비스입니다.');
       return;
     }
 
     // 가격 유효성 검사
     const priceValue = parseFloat(customService.price);
     if (isNaN(priceValue) || priceValue <= 0) {
+      console.log('Validation failed: invalid price:', priceValue);
       await addNotification('warning', '입력 확인', '올바른 가격을 입력해주세요.');
       return;
     }
     
     try {
       console.log('Starting subscription addition...');
+      console.log('User info:', {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        authenticated: !!user
+      });
+
+      // 사용자 세션 상태 확인
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session) {
+        console.error('Session validation failed:', sessionError);
+        await addNotification('error', '인증 오류', '세션이 만료되었습니다. 다시 로그인해주세요.');
+        return;
+      }
+      console.log('Session validated successfully');
       
       // 날짜 필드 처리: 빈 문자열인 경우 null로 변환
       const renewDate = customService.renewalDate || null;
@@ -206,7 +230,13 @@ const SubscriptionApp = () => {
       console.log('Supabase response:', { data, error });
 
       if (error) {
-        console.error('Error adding subscription:', error);
+        console.error('Error adding subscription:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          full_error: error
+        });
         
         // 에러 타입에 따른 구체적인 메시지
         let errorMessage = '구독 추가 중 오류가 발생했습니다.';
@@ -214,10 +244,16 @@ const SubscriptionApp = () => {
           errorMessage = '중복된 구독이 있습니다.';
         } else if (error.code === '23505') {
           errorMessage = '이미 동일한 구독이 존재합니다.';
-        } else if (error.message?.includes('JWT')) {
+        } else if (error.message?.includes('JWT') || error.message?.includes('jwt')) {
           errorMessage = '로그인이 만료되었습니다. 다시 로그인해주세요.';
-        } else if (error.message?.includes('network')) {
+        } else if (error.message?.includes('network') || error.message?.includes('fetch')) {
           errorMessage = '네트워크 연결을 확인해주세요.';
+        } else if (error.code === '42501') {
+          errorMessage = '권한이 없습니다. 다시 로그인해주세요.';
+        } else if (error.code === 'PGRST116') {
+          errorMessage = '데이터베이스 연결에 문제가 있습니다.';
+        } else {
+          errorMessage = `구독 추가 실패: ${error.message || '알 수 없는 오류'}`;
         }
         
         await addNotification('error', '구독 추가 실패', errorMessage);
@@ -248,11 +284,22 @@ const SubscriptionApp = () => {
       };
 
       console.log('Adding to local state:', localSubscription);
-      setSubscriptions(prev => [localSubscription, ...prev]);
+      setSubscriptions(prev => {
+        const newSubscriptions = [localSubscription, ...prev];
+        console.log('Updated subscriptions list:', newSubscriptions);
+        return newSubscriptions;
+      });
+      
       console.log('Success! Showing notification and navigating...');
       await addNotification('success', '구독 추가 완료', `${customService.name} 구독이 성공적으로 추가되었습니다.`);
-      setCurrentScreen('main');
+      
+      // 폼 리셋
       resetForm();
+      
+      // 짧은 지연 후 메인 화면으로 이동 (알림을 보여주기 위해)
+      setTimeout(() => {
+        setCurrentScreen('main');
+      }, 1000);
     } catch (error) {
       console.error('Unexpected error adding subscription:', error);
       
@@ -288,9 +335,13 @@ const SubscriptionApp = () => {
 
   // Supabase 구독 데이터 로딩
   const loadUserSubscriptions = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+      console.log('No user, skipping subscription load');
+      return;
+    }
     
     try {
+      console.log('Loading subscriptions for user:', user.id);
       const { data, error } = await supabase
         .from('subscriptions')
         .select('*')
@@ -300,9 +351,11 @@ const SubscriptionApp = () => {
         
       if (error) {
         console.error('Error loading subscriptions:', error);
-        await addNotification('error', '구독 로딩 실패', ERROR_MESSAGES.SUBSCRIPTION_LOAD_FAILED);
+        await addNotification('error', '구독 로딩 실패', '구독 정보를 불러오는 중 오류가 발생했습니다.');
         return;
       }
+      
+      console.log('Raw subscription data from Supabase:', data);
       
       const localSubscriptions: Subscription[] = data.map((sub, index) => ({
         id: generateId() + index,
@@ -321,11 +374,12 @@ const SubscriptionApp = () => {
         category: sub.category
       }));
       
+      console.log('Converted subscriptions:', localSubscriptions);
       setSubscriptions(localSubscriptions);
-          } catch (error) {
-        console.error('Unexpected error loading subscriptions:', error);
-        await addNotification('error', '구독 로딩 실패', ERROR_MESSAGES.GENERIC_ERROR);
-      }
+    } catch (error) {
+      console.error('Unexpected error loading subscriptions:', error);
+      await addNotification('error', '구독 로딩 실패', '예상치 못한 오류가 발생했습니다.');
+    }
   }, [user, supabase, addNotification]);
 
   // Supabase 알림 데이터 로딩
@@ -407,6 +461,68 @@ const SubscriptionApp = () => {
     }
   }, [supabaseProfile, user]);
 
+  // 프로필 입력 핸들러
+  const handleProfileInput = (field: keyof Profile, value: string) => {
+    setProfile(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  // 프로필 저장 핸들러
+  const handleProfileSave = async () => {
+    if (!user) {
+      await addNotification('error', '로그인 필요', '로그인이 필요한 서비스입니다.');
+      return;
+    }
+
+    try {
+      console.log('Saving profile:', profile);
+      
+      const updateData = {
+        username: profile.username?.trim() || null,
+        first_name: profile.firstName?.trim() || null,
+        last_name: profile.lastName?.trim() || null,
+        email: profile.email?.trim() || user.email,
+        photo_url: profile.photo?.trim() || null,
+        cover_photo_url: profile.coverPhoto?.trim() || null,
+        updated_at: new Date().toISOString()
+      };
+
+      const { error } = await supabase
+        .from('profiles')
+        .upsert({ 
+          id: user.id,
+          ...updateData 
+        });
+
+      if (error) {
+        console.error('Error updating profile:', error);
+        await addNotification('error', '프로필 저장 실패', '프로필 저장 중 오류가 발생했습니다.');
+        return;
+      }
+
+      await addNotification('success', '프로필 저장 완료', '프로필이 성공적으로 저장되었습니다.');
+      
+      // 프로필 새로고침 - Context의 updateProfile 호출
+      try {
+        await updateProfile(updateData);
+      } catch (error) {
+        console.log('Context update failed, but main update succeeded');
+      }
+      
+    } catch (error) {
+      console.error('Unexpected error saving profile:', error);
+      await addNotification('error', '프로필 저장 실패', '예상치 못한 오류가 발생했습니다.');
+    }
+  };
+
+  // 프로필 취소 핸들러
+  const handleProfileCancel = () => {
+    updateLocalProfile(); // 원래 상태로 복원
+    setCurrentScreen('main');
+  };
+
   // 환율 정보 가져오기
   const fetchExchangeRate = useCallback(async () => {
     try {
@@ -420,24 +536,30 @@ const SubscriptionApp = () => {
   // 인증 상태 변화 감지
   useEffect(() => {
     if (user && !authLoading) {
+      console.log('User authenticated, loading data...');
       setIsLoggedIn(true);
       
       // Load user data
       const loadData = async () => {
         try {
+          console.log('Loading all user data...');
           await Promise.all([
             loadUserSubscriptions(),
             loadUserNotifications(),
             loadUserAlarmHistory()
           ]);
+          console.log('All user data loaded successfully');
         } catch (error) {
           console.error('Error loading user data:', error);
         }
       };
       
       loadData();
+      
+      // 프로필 업데이트는 supabaseProfile이 변경될 때마다 실행
       updateLocalProfile();
     } else if (!user && !authLoading) {
+      console.log('User logged out, clearing data...');
       // 로그아웃 시 모든 데이터 완전 초기화
       setIsLoggedIn(false);
       setSubscriptions([]);
@@ -449,7 +571,15 @@ const SubscriptionApp = () => {
         email: ''
       });
     }
-  }, [user, authLoading, loadUserSubscriptions, loadUserNotifications, loadUserAlarmHistory, updateLocalProfile]);
+  }, [user, authLoading, loadUserSubscriptions, loadUserNotifications, loadUserAlarmHistory]);
+  
+  // supabaseProfile이 변경될 때마다 로컬 프로필 업데이트
+  useEffect(() => {
+    if (user && supabaseProfile) {
+      console.log('Supabase profile updated, updating local profile...');
+      updateLocalProfile();
+    }
+  }, [supabaseProfile, user, updateLocalProfile]);
 
   // 환율 정보 가져오기
   useEffect(() => {
@@ -806,47 +936,11 @@ const SubscriptionApp = () => {
                  onClick={async (e) => {
                    e.preventDefault();
                    console.log('구독 추가하기 버튼 클릭됨');
-                   console.log('버튼 disabled 상태:', !customService.name || !customService.price);
-                   console.log('사용자 로그인 상태:', !!user);
                    console.log('form data:', { 
                      name: customService.name, 
                      price: customService.price,
                      user: user?.id 
                    });
-                   
-                   // 입력 필드 유효성 검사
-                   if (!customService.name?.trim()) {
-                     await addNotification('warning', '입력 확인', '서비스명을 입력해주세요.');
-                     return;
-                   }
-                   if (!customService.price?.trim()) {
-                     await addNotification('warning', '입력 확인', '가격을 입력해주세요.');
-                     return;
-                   }
-                   if (!user) {
-                     await addNotification('error', '로그인 필요', '로그인이 필요한 서비스입니다.');
-                     return;
-                   }
-                   
-                   // Supabase 연결 상태 확인
-                   try {
-                     const { data: connectionTest, error: connectionError } = await supabase
-                       .from('subscriptions')
-                       .select('count')
-                       .limit(1);
-                     
-                     if (connectionError) {
-                       console.error('Supabase 연결 테스트 실패:', connectionError);
-                       await addNotification('error', '연결 오류', 'Supabase 연결에 문제가 있습니다.');
-                       return;
-                     }
-                     
-                     console.log('Supabase 연결 테스트 성공');
-                   } catch (error) {
-                     console.error('Supabase 연결 테스트 중 오류:', error);
-                     await addNotification('error', '연결 오류', 'Supabase 연결에 문제가 있습니다.');
-                     return;
-                   }
                    
                    await handleAddSubscription();
                  }}
@@ -859,8 +953,167 @@ const SubscriptionApp = () => {
           </div>
         )}
 
+        {/* 프로필 화면 */}
+        {currentScreen === 'profile' && (
+          <div className="min-h-screen bg-gradient-to-b from-blue-900 via-blue-800 to-blue-700" style={{ fontFamily: "'Nanum Gothic', sans-serif" }}>
+            <link
+              href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&display=swap"
+              rel="stylesheet"
+            />
+            
+            {/* 헤더 영역 */}
+            <div className="flex items-center justify-between px-4 py-4">
+              <button
+                onClick={() => setCurrentScreen('main')}
+                className="flex items-center text-white/80 hover:text-white transition-colors duration-200"
+              >
+                <ChevronLeft className="w-6 h-6 mr-1" />
+                뒤로
+              </button>
+              <h1 className="text-white text-lg font-semibold">프로필</h1>
+              <div className="w-8" />
+            </div>
+            
+            {/* 메인 콘텐츠 */}
+            <div className="bg-gray-50 rounded-t-3xl px-4 pt-6 pb-24 min-h-[75vh] -mt-4 relative z-10">
+              {/* 프로필 정보 */}
+              <div className="text-center mb-6">
+                <div className="relative inline-block">
+                  {profile.photo ? (
+                    <img
+                      src={profile.photo}
+                      alt="프로필 사진"
+                      className="w-24 h-24 rounded-full mx-auto object-cover border-4 border-white shadow-lg"
+                    />
+                  ) : (
+                    <div className="w-24 h-24 rounded-full mx-auto bg-blue-500 flex items-center justify-center border-4 border-white shadow-lg">
+                      <User className="w-12 h-12 text-white" />
+                    </div>
+                  )}
+                </div>
+                <h2 className="text-xl font-bold text-gray-900 mt-4">
+                  {profile.firstName || profile.lastName 
+                    ? `${profile.firstName} ${profile.lastName}`.trim()
+                    : profile.username || '사용자'
+                  }
+                </h2>
+                <p className="text-gray-600">{profile.email}</p>
+              </div>
+
+              {/* 프로필 편집 폼 */}
+              <div className="bg-white rounded-2xl p-6 shadow-md">
+                <h3 className="text-lg font-bold text-gray-900 mb-4">프로필 편집</h3>
+                
+                <form onSubmit={(e: React.FormEvent) => { e.preventDefault(); handleProfileSave(); }}>
+                  <div className="space-y-4">
+                    {/* 사용자명 */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        사용자명
+                      </label>
+                      <input
+                        type="text"
+                        value={profile.username}
+                        onChange={(e) => handleProfileInput('username', e.target.value)}
+                        placeholder="사용자명을 입력하세요"
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200"
+                      />
+                    </div>
+
+                    {/* 프로필 사진 URL */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        프로필 사진 URL
+                      </label>
+                      <input
+                        type="url"
+                        value={profile.photo || ''}
+                        onChange={(e) => handleProfileInput('photo', e.target.value)}
+                        placeholder="프로필 사진 URL을 입력하세요"
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200"
+                      />
+                      {profile.photo && (
+                        <div className="mt-2 flex justify-center">
+                          <img
+                            src={profile.photo}
+                            alt="프로필 미리보기"
+                            className="w-16 h-16 rounded-full object-cover"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 이름 */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          이름
+                        </label>
+                        <input
+                          type="text"
+                          value={profile.firstName}
+                          onChange={(e) => handleProfileInput('firstName', e.target.value)}
+                          placeholder="이름"
+                          className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          성
+                        </label>
+                        <input
+                          type="text"
+                          value={profile.lastName}
+                          onChange={(e) => handleProfileInput('lastName', e.target.value)}
+                          placeholder="성"
+                          className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200"
+                        />
+                      </div>
+                    </div>
+
+                    {/* 이메일 */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        이메일
+                      </label>
+                      <input
+                        type="email"
+                        value={profile.email}
+                        onChange={(e) => handleProfileInput('email', e.target.value)}
+                        placeholder="이메일을 입력하세요"
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200"
+                      />
+                    </div>
+                  </div>
+
+                  {/* 버튼 영역 */}
+                  <div className="flex space-x-3 mt-6">
+                    <button
+                      type="button"
+                      onClick={handleProfileCancel}
+                      className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 py-3 rounded-xl font-semibold transition-all duration-200"
+                    >
+                      취소
+                    </button>
+                    <button
+                      type="submit"
+                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-semibold transition-all duration-200 shadow-sm hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    >
+                      저장
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* 다른 화면들은 필요에 따라 추가 */}
-        {currentScreen !== 'main' && currentScreen !== 'add' && (
+        {currentScreen !== 'main' && currentScreen !== 'add' && currentScreen !== 'profile' && (
           <div className="px-4 py-6 sm:px-0">
             <div className="text-center py-12">
               <div className="text-gray-400 text-lg mb-4">

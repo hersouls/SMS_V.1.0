@@ -62,36 +62,37 @@ export const SupabaseProvider: React.FC<SupabaseProviderProps> = ({ children }) 
 
       const { data, error } = await supabase
         .from('profiles')
-        .insert({
+        .upsert({
           id: userId,
           email: userEmail,
           first_name: firstName,
           last_name: lastName,
           photo_url: photoUrl,
+          username: userName || null,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'id'
         })
         .select()
         .single();
 
       if (error) {
-        console.error('Error creating profile:', error);
-        // 이미 존재하는 경우 다시 조회
-        if (error.code === '23505') { // unique violation
-          console.log('Profile already exists, fetching...');
-          const { data: existingData } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', userId)
-            .single();
-          if (existingData) {
-            setProfile(existingData);
-          }
+        console.error('Error creating/updating profile:', error);
+        // 프로필이 이미 존재하는 경우 다시 조회
+        const { data: existingData } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .single();
+        if (existingData) {
+          console.log('Using existing profile:', existingData);
+          setProfile(existingData);
         }
         return;
       }
 
-      console.log('Profile created successfully:', data);
+      console.log('Profile created/updated successfully:', data);
       setProfile(data);
     } catch (error) {
       console.error('Error creating profile:', error);
@@ -100,6 +101,7 @@ export const SupabaseProvider: React.FC<SupabaseProviderProps> = ({ children }) 
 
   const fetchProfile = useCallback(async (userId: string, sessionUser?: User) => {
     try {
+      console.log('Fetching profile for user:', userId);
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -117,6 +119,7 @@ export const SupabaseProvider: React.FC<SupabaseProviderProps> = ({ children }) 
         return;
       }
 
+      console.log('Profile fetched successfully:', data);
       setProfile(data);
     } catch (error) {
       console.error('Error fetching profile:', error);
