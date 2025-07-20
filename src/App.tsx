@@ -126,22 +126,35 @@ const SubscriptionApp = () => {
     }
     
     try {
+      // 날짜 필드 처리: 빈 문자열인 경우 null로 변환
+      const renewDate = customService.renewalDate || null;
+      const startDate = customService.startDate || null;
+      
+      // payment_date는 숫자 타입이므로 빈 문자열인 경우 null로 처리
+      let paymentDate = null;
+      if (customService.paymentDate && customService.paymentDate.trim() !== '') {
+        paymentDate = parseInt(customService.paymentDate);
+      } else if (renewDate) {
+        // renewalDate가 있는 경우 해당 날짜의 일자를 사용
+        paymentDate = new Date(renewDate).getDate();
+      }
+
       const { data, error } = await supabase
         .from('subscriptions')
         .insert({
           user_id: user.id,
           name: customService.name,
           icon: '📱',
-          icon_image_url: customService.iconImage,
+          icon_image_url: customService.iconImage || null,
           price: parseFloat(customService.price),
           currency: customService.currency,
-          renew_date: customService.renewalDate,
-          start_date: customService.startDate || new Date().toISOString().split('T')[0],
-          payment_date: parseInt(customService.paymentDate) || new Date(customService.renewalDate).getDate(),
-          payment_card: customService.paymentCard,
-          url: customService.url,
+          renew_date: renewDate,
+          start_date: startDate,
+          payment_date: paymentDate,
+          payment_card: customService.paymentCard || null,
+          url: customService.url || null,
           color: '#6C63FF',
-          category: customService.category,
+          category: customService.category || null,
           is_active: true
         })
         .select()
@@ -158,10 +171,10 @@ const SubscriptionApp = () => {
         databaseId: data.id,
         name: data.name,
         icon: data.icon || '📱',
-        iconImage: data.icon_image_url,
+        iconImage: data.icon_image_url || '',
         price: data.price,
         currency: data.currency as 'KRW' | 'USD' | 'EUR' | 'JPY',
-        renewDate: data.renew_date,
+        renewDate: data.renew_date || '',
         startDate: data.start_date || '',
         paymentDate: data.payment_date?.toString() || '',
         paymentCard: data.payment_card || '',
