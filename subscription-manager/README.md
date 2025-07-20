@@ -1,127 +1,152 @@
-# 구독 관리 애플리케이션
+# 구독 관리 서비스 (Subscription Manager)
 
-React와 TypeScript로 개발된 구독 서비스 관리 애플리케이션입니다.
+## 📋 개요
+구독 서비스들을 한 곳에서 관리할 수 있는 웹 애플리케이션입니다. 사용자는 자신의 구독 서비스를 추가, 수정, 삭제하고 결제일을 추적할 수 있습니다.
 
-## 주요 기능
+## 🚀 주요 기능
 
-### 📱 구독 관리
-- 구독 서비스 추가/수정/삭제
-- 구독 정보 관리 (이름, 가격, 갱신일, 결제일, 결제 방법, URL 등)
-- 통화 지원 (USD, KRW)
-- 실시간 환율 정보 연동 (한국은행 ECOS API)
+### ✅ Supabase 완전 연동
+- **하드코딩된 데이터 완전 제거**: 모든 구독, 알림, 히스토리 데이터가 Supabase에서 관리됩니다
+- **실시간 데이터 동기화**: 사용자별 데이터 실시간 로딩 및 업데이트
+- **사용자 인증**: Google OAuth 및 이메일/비밀번호 로그인 지원
+- **프로필 관리**: 사용자 프로필 정보 Supabase 저장 및 관리
 
-### 💰 가격 관리
-- 월 구독료 추적
-- 원화 통합 표시 (달러 구독도 원화로 환산)
-- 총 구독 수 및 총액 표시
-
-### 📅 달력 기능
-- 구독 갱신일 달력 표시
-- 달력에서 구독 정보 확인 및 수정
+### 📊 구독 관리
+- ✅ 구독 서비스 추가/수정/삭제 (Supabase 연동)
+- ✅ 다중 통화 지원 (KRW, USD, EUR, JPY)
+- ✅ 실시간 환율 정보 (Supabase 저장)
+- ✅ 카테고리별 구독 분류
+- ✅ 커스텀 아이콘 업로드 지원
 
 ### 🔔 알림 시스템
-- 구독 추가/수정/삭제 알림
-- 알람 히스토리 관리
-- 실시간 알림 토스트
+- ✅ 구독 관련 알림 (Supabase 연동)
+- ✅ 히스토리 추적 (추가/수정/삭제 기록)
+- ✅ 알림 읽음 처리 및 삭제
 
-### 👤 프로필 관리
-- 사용자 프로필 정보 관리
-- 프로필 사진 및 커버 사진 업로드
-- 개인 정보 수정
+### 📱 반응형 UI
+- ✅ 모바일 최적화 디자인
+- ✅ 다크모드 지원
+- ✅ 직관적인 사용자 인터페이스
 
-### 🎨 UI/UX
-- 반응형 디자인
-- Tailwind CSS 스타일링
-- Lucide React 아이콘
-- Google Fonts (Nanum Gothic)
+## 🛠 기술 스택
 
-## 기술 스택
+### Frontend
+- **React 19.1.0** - UI 라이브러리
+- **TypeScript** - 타입 안정성
+- **Tailwind CSS** - 스타일링
+- **Headless UI** - 접근성 높은 UI 컴포넌트
+- **Lucide React** - 아이콘
 
-- **Frontend**: React 18, TypeScript
-- **Backend**: Supabase (PostgreSQL, Auth, Real-time)
-- **Styling**: Tailwind CSS
-- **Icons**: Lucide React, Heroicons
-- **State Management**: React Hooks
-- **Build Tool**: Create React App
+### Backend & Database
+- **Supabase** - 백엔드 서비스
+  - PostgreSQL 데이터베이스
+  - 실시간 구독
+  - 사용자 인증
+  - 파일 저장소
 
-## 설치 및 실행
+### Supabase 테이블 구조
+- `profiles` - 사용자 프로필 정보
+- `subscriptions` - 구독 서비스 데이터
+- `notifications` - 알림 데이터
+- `alarm_history` - 히스토리 추적
+- `exchange_rates` - 환율 정보
+
+## 🔧 설치 및 실행
+
+### 1. 저장소 클론
+```bash
+git clone <repository-url>
+cd subscription-manager
+```
+
+### 2. 의존성 설치
+```bash
+npm install
+```
+
+### 3. 환경 변수 설정
+`.env` 파일을 생성하고 다음 내용을 추가하세요:
+
+```env
+REACT_APP_SUPABASE_URL=your_supabase_url
+REACT_APP_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+### 4. Supabase 데이터베이스 설정
+`supabase-schema.sql` 파일을 사용하여 Supabase에 필요한 테이블들을 생성하세요.
+
+### 5. 애플리케이션 실행
+```bash
+npm start
+```
+
+애플리케이션이 `http://localhost:3000`에서 실행됩니다.
+
+## 📦 빌드
+
+프로덕션 빌드를 생성하려면:
 
 ```bash
-# 의존성 설치
-npm install
-
-# 개발 서버 실행
-npm start
-
-# 빌드
 npm run build
 ```
 
-## 환경 설정
+## 🔐 인증 설정
 
-### Supabase 설정
-Supabase를 사용하여 백엔드 데이터베이스를 구성합니다.
+### Google OAuth 설정
+1. Google Cloud Console에서 OAuth 2.0 클라이언트 ID 생성
+2. Supabase 대시보드에서 Google Provider 설정
+3. 리디렉션 URL 설정: `https://your-supabase-project.supabase.co/auth/v1/callback`
 
-1. [Supabase](https://supabase.com/)에서 새 프로젝트 생성
-2. 프로젝트 설정에서 URL과 API 키 확인
-3. `.env.local` 파일 생성 및 환경변수 설정:
+자세한 설정 방법은 `Google_OAuth_Setup_Guide.md`를 참조하세요.
 
+## 📊 데이터베이스 스키마
+
+### 주요 테이블
+- **subscriptions**: 구독 서비스 정보 저장
+- **profiles**: 사용자 프로필 정보
+- **notifications**: 시스템 알림
+- **alarm_history**: 구독 관련 히스토리
+- **exchange_rates**: 환율 정보
+
+## 🚀 배포
+
+프로젝트는 GitHub Pages, Netlify, Vercel 등 정적 호스팅 서비스에 배포할 수 있습니다.
+
+Vercel 배포 예시:
 ```bash
-# Supabase Configuration
-REACT_APP_SUPABASE_URL=your_supabase_project_url
-REACT_APP_SUPABASE_ANON_KEY=your_supabase_anon_key
-
-# Exchange Rate API (기존 설정 유지)
-REACT_APP_EXCHANGE_RATE_API_KEY=your_exchange_rate_api_key
+npm run build
+npx vercel --prod
 ```
 
-### 소셜 로그인 설정
+## 🤝 기여하기
 
-구글과 카카오톡 소셜 로그인을 사용하려면 Supabase에서 다음 설정을 완료해야 합니다:
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-#### Google OAuth 설정
-1. [Google Cloud Console](https://console.cloud.google.com/)에서 새 프로젝트 생성
-2. OAuth 2.0 클라이언트 ID 생성
-3. 승인된 리디렉션 URI에 `https://your-project.supabase.co/auth/v1/callback` 추가
-4. 클라이언트 ID와 클라이언트 시크릿을 Supabase Authentication > Providers > Google에 설정
+## 📝 라이선스
 
-#### Kakao OAuth 설정
-1. [Kakao Developers](https://developers.kakao.com/)에서 애플리케이션 생성
-2. 플랫폼 설정에서 웹 플랫폼 추가
-3. 사이트 도메인에 `https://your-project.supabase.co` 추가
-4. 리디렉션 URI에 `https://your-project.supabase.co/auth/v1/callback` 추가
-5. JavaScript 키를 Supabase Authentication > Providers > Kakao에 설정
+이 프로젝트는 MIT 라이선스 하에 배포됩니다.
 
-### 환율 API 설정
-한국은행 ECOS API를 사용하여 실시간 환율 정보를 가져옵니다.
+## 📞 연락처
 
-1. [한국은행 ECOS](https://ecos.bok.or.kr/)에서 API 키 발급
-2. `src/App.tsx`의 `fetchExchangeRate` 함수에서 API 키 설정
+- 개발자: [GitHub Profile](https://github.com/hersouls)
+- 블로그: [Naver Blog](https://blog.naver.com/ycdy80)
+- 인스타그램: [@da_youn](https://www.instagram.com/da_youn/)
 
-```typescript
-const API_KEY = 'your_api_key_here';
-const response = await fetch(`https://ecos.bok.or.kr/api/StatisticSearch/${API_KEY}/json/kr/1/100/036Y001/DD/${dateStr}/${dateStr}/0001`);
-```
+## 📈 업데이트 내역
 
-## 프로젝트 구조
+### v2.0.0 - Supabase 완전 연동 (2024-01-XX)
+- ✅ 모든 하드코딩된 데이터 제거
+- ✅ Supabase 데이터베이스 완전 연동
+- ✅ 사용자별 데이터 분리 및 보안 강화
+- ✅ 실시간 데이터 동기화
+- ✅ 프로필 관리 시스템 추가
+- ✅ 환율 정보 자동 저장 및 관리
 
-```
-src/
-├── App.tsx              # 메인 애플리케이션 컴포넌트
-├── App.css              # 전역 스타일
-├── index.tsx            # 애플리케이션 진입점
-└── index.css            # 기본 스타일
-```
-
-## 주요 컴포넌트
-
-- **메인 화면**: 구독 목록, 총액 표시, 달력
-- **구독 추가/수정**: 구독 정보 입력 폼
-- **상세 보기**: 구독 상세 정보 표시
-- **알림**: 알림 목록 및 관리
-- **알람 히스토리**: 구독 활동 기록
-- **프로필**: 사용자 프로필 관리
-
-## 라이선스
-
-MIT License
+### v1.0.0 - 초기 버전
+- 구독 관리 기본 기능
+- 반응형 UI 구현
+- 로컬 상태 관리

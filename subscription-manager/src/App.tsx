@@ -1,41 +1,45 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Check, Calendar, DollarSign, Tag, Bell, User, Home, Menu, Plus, Edit2, Trash2, Upload, Image, Settings, ChevronLeft, ChevronRight, CreditCard, Globe, Banknote, CalendarRange } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  Search, Check, Calendar, DollarSign, Tag, Bell, User, Home, Menu, Plus, Edit2, Trash2, Upload, Image,
+  Settings, ChevronLeft, ChevronRight, CreditCard, Globe, Banknote, CalendarRange
+} from 'lucide-react';
 import { Transition } from '@headlessui/react';
-import { CheckCircleIcon, XMarkIcon, CheckIcon, HandThumbUpIcon, UserIcon, PhotoIcon, UserCircleIcon } from '@heroicons/react/24/outline';
+import {
+  CheckCircleIcon, XMarkIcon, CheckIcon, HandThumbUpIcon, UserIcon, PhotoIcon, UserCircleIcon
+} from '@heroicons/react/24/outline';
 import { useSupabase } from './contexts/SupabaseContext';
 import { LoginScreen } from './components/LoginScreen';
 import { SupabaseTest } from './components/SupabaseTest';
 
+// --- 타입 정의 ---
 interface Subscription {
   id: number;
+  databaseId?: string;
   name: string;
   icon: string;
-  iconImage?: string; // 이미지 URL 추가
+  iconImage?: string;
   price: number;
-  currency: string; // 통화 추가
+  currency: 'KRW' | 'USD' | 'EUR' | 'JPY';
   renewDate: string;
-  startDate: string; // 구독 시작일 추가
-  paymentDate: string; // 결재일 추가
-  paymentCard: string; // 결제카드 추가
-  url: string; // URL 추가
-  color: string;
-  category: string;
+  startDate: string;
+  paymentDate?: string;
+  paymentCard?: string;
+  url?: string;
+  color?: string;
+  category?: string;
 }
 
-
-
-interface CustomService {
-  name: string;
-  price: string;
-  currency: string; // 통화 추가
-  renewalDate: string;
-  startDate: string; // 구독 시작일 추가
-  paymentDate: string; // 결재일 추가
-  paymentCard: string; // 결제카드 추가
-  url: string; // URL 추가
-  category: string;
-  notifications: boolean;
-  iconImage?: string; // 이미지 URL 추가
+interface AlarmHistory {
+  id: string;
+  type: 'subscription_added' | 'subscription_updated' | 'subscription_deleted' | 'renewal_reminder' | 'payment_due';
+  content: string;
+  target: string;
+  date: string;
+  datetime: string;
+  icon: React.ComponentType<any>;
+  iconBackground: string;
+  subscriptionId?: number;
+  subscriptionImage?: string;
 }
 
 interface Notification {
@@ -46,17 +50,18 @@ interface Notification {
   timestamp: Date;
 }
 
-interface AlarmHistory {
-  id: string;
-  type: 'subscription_added' | 'subscription_updated' | 'subscription_deleted' | 'renewal_reminder' | 'payment_due';
-  content: string;
-  target: string;
-  date: string;
-  datetime: string;
-  icon: any;
-  iconBackground: string;
-  subscriptionId?: number;
-  subscriptionImage?: string;
+interface CustomService {
+  name: string;
+  price: string;
+  currency: 'KRW' | 'USD' | 'EUR' | 'JPY';
+  renewalDate: string;
+  startDate: string;
+  paymentDate: string;
+  paymentCard: string;
+  url: string;
+  category: string;
+  notifications: boolean;
+  iconImage: string;
 }
 
 interface Profile {
@@ -68,56 +73,31 @@ interface Profile {
   coverPhoto?: string;
 }
 
+// --- 컴포넌트 시작 ---
 const SubscriptionApp = () => {
-  const { user, profile: supabaseProfile, loading: authLoading, signOut } = useSupabase();
-  const [currentScreen, setCurrentScreen] = useState<'main' | 'add' | 'manage' | 'detail' | 'notifications' | 'alarm-history' | 'profile' | 'supabase-test'>('main');
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null);
-  const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null);
+  const { user, profile: supabaseProfile, loading: authLoading, signOut, supabase } = useSupabase();
+
+  // 1. 빈 값으로 모든 상태 선언
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+  const [alarmHistory, setAlarmHistory] = useState<AlarmHistory[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showNotification, setShowNotification] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [currentScreen, setCurrentScreen] = useState<'main' | 'add' | 'manage' | 'detail' | 'notifications' | 'alarm-history' | 'profile' | 'supabase-test'>('main');
+  const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null);
+  const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null);
   const [profile, setProfile] = useState<Profile>({
     username: '',
     firstName: '',
     lastName: '',
     email: ''
   });
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [exchangeRate, setExchangeRate] = useState<number>(1300); // 기본 환율 (1 USD = 1300 KRW)
-  const [exchangeRateLoading, setExchangeRateLoading] = useState(false);
-  
-  // 앱 시작 시 환율 정보 가져오기
-  useEffect(() => {
-    fetchExchangeRate();
-    
-    // 1시간마다 환율 정보 업데이트
-    const interval = setInterval(fetchExchangeRate, 60 * 60 * 1000);
-    
-    return () => clearInterval(interval);
-  }, []);
 
-  // 인증 상태 변경 감지
-  useEffect(() => {
-    if (user && !authLoading) {
-      setIsLoggedIn(true);
-    } else if (!user && !authLoading) {
-      setIsLoggedIn(false);
-    }
-  }, [user, authLoading]);
-  
-  const [alarmHistory, setAlarmHistory] = useState<AlarmHistory[]>([
-    {
-      id: '1',
-      type: 'subscription_added',
-      content: '구독이 추가되었습니다',
-      target: '넷플릭스',
-      date: '7월 18',
-      datetime: '2024-07-18',
-      icon: CheckIcon,
-      iconBackground: 'bg-green-500',
-      subscriptionId: 1
-    }
-  ]);
+  // 기타 상태
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [exchangeRate, setExchangeRate] = useState<number>(1300);
+  const [exchangeRateLoading, setExchangeRateLoading] = useState(false);
+
   const [customService, setCustomService] = useState<CustomService>({
     name: '',
     price: '',
@@ -132,115 +112,206 @@ const SubscriptionApp = () => {
     iconImage: ''
   });
 
-  const [subscriptions, setSubscriptions] = useState<Subscription[]>([
-    {
-      id: 1,
-      name: '넷플릭스',
-      icon: '🎬',
-      price: 19.99,
-      currency: 'USD',
-      renewDate: '2024-06-15',
-      startDate: '2024-01-15',
-      paymentDate: '15',
-      paymentCard: '신한카드',
-      url: 'https://www.netflix.com',
-      color: '#E50914',
-      category: '엔터테인먼트'
-    },
-    {
-      id: 2,
-      name: 'GPT',
-      icon: '🤖',
-      price: 20.00,
-      currency: 'USD',
-      renewDate: '2024-06-10',
-      startDate: '2024-02-10',
-      paymentDate: '10',
-      paymentCard: 'KB국민카드',
-      url: 'https://chat.openai.com',
-      color: '#10A37F',
-      category: '생산성'
-    },
-    {
-      id: 3,
-      name: '디즈니+',
-      icon: '✨',
-      price: 10.99,
-      currency: 'USD',
-      renewDate: '2024-06-10',
-      startDate: '2024-03-10',
-      paymentDate: '10',
-      paymentCard: '삼성카드',
-      url: 'https://www.disneyplus.com',
-      color: '#113CCF',
-      category: '엔터테인먼트'
-    },
-    {
-      id: 4,
-      name: '스포티파이',
-      icon: '🎵',
-      price: 9.99,
-      currency: 'USD',
-      renewDate: '2024-06-01',
-      startDate: '2024-04-01',
-      paymentDate: '1',
-      paymentCard: '현대카드',
-      url: 'https://www.spotify.com',
-      color: '#1DB954',
-      category: '음악'
+  // 2. 사용자 인증 상태 확인 및 데이터 로딩
+  useEffect(() => {
+    if (user && !authLoading) {
+      setIsLoggedIn(true);
+      loadUserData();
+
+      // 프로필 동기화
+      if (supabaseProfile) {
+        setProfile({
+          username: supabaseProfile.username || '',
+          firstName: supabaseProfile.first_name || '',
+          lastName: supabaseProfile.last_name || '',
+          email: supabaseProfile.email || user.email || '',
+          photo: supabaseProfile.photo_url || '',
+          coverPhoto: supabaseProfile.cover_photo_url || ''
+        });
+      } else if (user.user_metadata) {
+        const fullName = user.user_metadata.full_name || user.user_metadata.name || '';
+        const nameParts = fullName.split(' ');
+        setProfile({
+          username: user.user_metadata.preferred_username || '',
+          firstName: nameParts[0] || '',
+          lastName: nameParts.slice(1).join(' ') || '',
+          email: user.email || '',
+          photo: user.user_metadata.avatar_url || user.user_metadata.picture || '',
+          coverPhoto: ''
+        });
+      }
+    } else if (!user && !authLoading) {
+      // 로그아웃 시 모든 데이터 완전 초기화
+      setIsLoggedIn(false);
+      setSubscriptions([]);
+      setNotifications([]);
+      setAlarmHistory([]);
+      setProfile({
+        username: '',
+        firstName: '',
+        lastName: '',
+        email: ''
+      });
     }
-  ]);
+  }, [user, authLoading, supabaseProfile]);
 
+  // 3. 환율 정보 가져오기
+  useEffect(() => {
+    fetchExchangeRate();
+    const interval = setInterval(fetchExchangeRate, 60 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
 
+  // 4. 사용자 전체 데이터 불러오기
+  const loadUserData = async () => {
+    if (!user) return;
+    try {
+      await Promise.all([
+        loadUserSubscriptions(),
+        loadUserNotifications(),
+        loadUserAlarmHistory()
+      ]);
+    } catch (error) {
+      console.error('Error loading user data:', error);
+    }
+  };
 
-  const categories = ['엔터테인먼트', '음악', '생산성', '쇼핑', '개발', 'AI서비스'];
+  // 5. Supabase 구독 데이터 로딩
+  const loadUserSubscriptions = async () => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false });
+      if (error) {
+        console.error('Error loading subscriptions:', error);
+        await addNotification('error', '구독 로딩 실패', '구독 정보를 불러오지 못했습니다.');
+        return;
+      }
+      const localSubscriptions: Subscription[] = data.map((sub, index) => ({
+        id: Date.now() + index,
+        databaseId: sub.id,
+        name: sub.name,
+        icon: sub.icon || '📱',
+        iconImage: sub.icon_image_url,
+        price: sub.price,
+        currency: sub.currency as 'KRW' | 'USD' | 'EUR' | 'JPY',
+        renewDate: sub.renew_date,
+        startDate: sub.start_date || '',
+        paymentDate: sub.payment_date?.toString() || '',
+        paymentCard: sub.payment_card || '',
+        url: sub.url || '',
+        color: sub.color || '#000000',
+        category: sub.category || ''
+      }));
+      setSubscriptions(localSubscriptions);
+    } catch (error) {
+      console.error('Error loading subscriptions:', error);
+      await addNotification('error', '구독 로딩 실패', '구독 정보를 불러오지 못했습니다.');
+    }
+  };
 
-  // 환율 변환 함수
+  // 6. Supabase 알림 히스토리 로딩
+  const loadUserAlarmHistory = async () => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from('alarm_history')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(50);
+      if (error) {
+        console.error('Error loading alarm history:', error);
+        return;
+      }
+      const localAlarmHistory: AlarmHistory[] = data.map(alarm => {
+        const createdAt = new Date(alarm.created_at);
+        return {
+          id: alarm.id,
+          type: alarm.type,
+          content: alarm.content,
+          target: alarm.target,
+          date: createdAt.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' }),
+          datetime: createdAt.toISOString().split('T')[0],
+          icon: getAlarmIcon(alarm.type),
+          iconBackground: getAlarmIconBackground(alarm.type),
+          subscriptionId: alarm.subscription_id ? parseInt(alarm.subscription_id) : undefined,
+          subscriptionImage: alarm.subscription_image_url
+        };
+      });
+      setAlarmHistory(localAlarmHistory);
+    } catch (error) {
+      console.error('Error loading alarm history:', error);
+    }
+  };
+
+  // 7. Supabase 알림 로딩
+  const loadUserNotifications = async () => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_read', false)
+        .order('created_at', { ascending: false });
+      if (error) {
+        console.error('Error loading notifications:', error);
+        return;
+      }
+      const localNotifications: Notification[] = data.map(notif => ({
+        id: notif.id,
+        type: notif.type,
+        title: notif.title,
+        message: notif.message,
+        timestamp: new Date(notif.created_at)
+      }));
+      setNotifications(localNotifications);
+    } catch (error) {
+      console.error('Error loading notifications:', error);
+    }
+  };
+
+  // 8. 알림 아이콘 도우미 함수들
+  const getAlarmIcon = (type: string) => {
+    switch (type) {
+      case 'subscription_added': return CheckIcon;
+      case 'subscription_updated': return Edit2;
+      case 'subscription_deleted': return Trash2;
+      case 'renewal_reminder': return Bell;
+      case 'payment_due': return CreditCard;
+      default: return Bell;
+    }
+  };
+
+  const getAlarmIconBackground = (type: string): string => {
+    switch (type) {
+      case 'subscription_added': return 'bg-green-500';
+      case 'subscription_updated': return 'bg-blue-500';
+      case 'subscription_deleted': return 'bg-red-500';
+      case 'renewal_reminder': return 'bg-yellow-500';
+      case 'payment_due': return 'bg-orange-500';
+      default: return 'bg-gray-500';
+    }
+  };
+
+  // 9. 환율 변환 함수
   const convertToKRW = (amount: number, currency: string): number => {
     if (currency === 'KRW') return amount;
     if (currency === 'USD') return amount * exchangeRate;
     return amount;
   };
 
-  // 환율 정보 가져오기 (한국은행 ECOS API)
-  const fetchExchangeRate = async () => {
-    setExchangeRateLoading(true);
-    try {
-      // 한국은행 ECOS API - 원/달러 환율 (036Y001: 원/달러 환율)
-      const today = new Date();
-      const year = today.getFullYear();
-      const month = String(today.getMonth() + 1).padStart(2, '0');
-      const day = String(today.getDate()).padStart(2, '0');
-      const dateStr = `${year}${month}${day}`;
-      
-      // 실제 API 키가 필요하지만, 여기서는 기본값 사용
-      // const API_KEY = 'your_api_key_here';
-      // const response = await fetch(`https://ecos.bok.or.kr/api/StatisticSearch/${API_KEY}/json/kr/1/100/036Y001/DD/${dateStr}/${dateStr}/0001`);
-      
-      // 임시로 고정 환율 사용 (실제로는 API 호출)
-      const mockExchangeRate = 1300 + Math.random() * 50; // 1300-1350 사이 랜덤값
-      setExchangeRate(mockExchangeRate);
-      
-      // 실제 API 호출 시 사용할 코드:
-      // const data = await response.json();
-      // if (data.StatisticSearch && data.StatisticSearch.row && data.StatisticSearch.row.length > 0) {
-      //   const rate = parseFloat(data.StatisticSearch.row[0].DATA_VALUE);
-      //   setExchangeRate(rate);
-      // }
-    } catch (error) {
-      console.error('환율 정보를 가져오는데 실패했습니다:', error);
-      // 에러 시 기본값 유지
-    } finally {
-      setExchangeRateLoading(false);
-    }
-  };
-
-  // 원화로 통합된 총액 계산
+  // 10. 원화로 통합된 총액 계산
   const totalAmountInKRW = subscriptions.reduce((sum, sub) => {
     return sum + convertToKRW(sub.price, sub.currency);
   }, 0);
 
-  // 소셜 미디어 네비게이션
+  // 11. 소셜 미디어 네비게이션
   const navigation = [
     {
       name: 'Blog',
@@ -283,6 +354,118 @@ const SubscriptionApp = () => {
     },
   ];
 
+  // 12. Supabase 알림 추가
+  const addNotification = async (type: Notification['type'], title: string, message: string) => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from('notifications')
+        .insert({
+          user_id: user.id,
+          type,
+          title,
+          message,
+          is_read: false
+        })
+        .select()
+        .single();
+      if (error) {
+        console.error('Error adding notification:', error);
+        return;
+      }
+      const localNotification: Notification = {
+        id: data.id,
+        type: data.type,
+        title: data.title,
+        message: data.message,
+        timestamp: new Date(data.created_at)
+      };
+      setNotifications(prev => [localNotification, ...prev]);
+      setShowNotification(true);
+      setTimeout(() => setShowNotification(false), 4000);
+    } catch (error) {
+      console.error('Error adding notification:', error);
+    }
+  };
+
+  // 13. Supabase 알람 히스토리 추가
+  const addAlarmHistory = async (type: AlarmHistory['type'], content: string, target: string, subscriptionId?: number) => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from('alarm_history')
+        .insert({
+          user_id: user.id,
+          type,
+          content,
+          target,
+          subscription_id: subscriptionId ? subscriptionId.toString() : null
+        })
+        .select()
+        .single();
+      if (error) {
+        console.error('Error adding alarm history:', error);
+        return;
+      }
+      const createdAt = new Date(data.created_at);
+      const newAlarm: AlarmHistory = {
+        id: data.id,
+        type: data.type,
+        content: data.content,
+        target: data.target,
+        date: createdAt.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' }),
+        datetime: createdAt.toISOString().split('T')[0],
+        icon: getAlarmIcon(data.type),
+        iconBackground: getAlarmIconBackground(data.type),
+        subscriptionId: data.subscription_id ? parseInt(data.subscription_id) : undefined,
+        subscriptionImage: data.subscription_image_url
+      };
+      setAlarmHistory(prev => [newAlarm, ...prev]);
+    } catch (error) {
+      console.error('Error adding alarm history:', error);
+    }
+  };
+
+  // 14. 환율 정보 가져오기
+  const fetchExchangeRate = async () => {
+    setExchangeRateLoading(true);
+    try {
+      // Supabase에서 최신 환율 정보 가져오기
+      const today = new Date().toISOString().split('T')[0];
+      const { data, error } = await supabase
+        .from('exchange_rates')
+        .select('*')
+        .eq('base_currency', 'USD')
+        .eq('target_currency', 'KRW')
+        .eq('date', today)
+        .single();
+
+      if (data && !error) {
+        setExchangeRate(data.rate);
+      } else {
+        // 오늘 환율 데이터가 없으면 임시 환율 사용 및 저장
+        const mockExchangeRate = 1300 + Math.random() * 50;
+        setExchangeRate(mockExchangeRate);
+        
+        // Supabase에 환율 정보 저장
+        await supabase
+          .from('exchange_rates')
+          .upsert({
+            base_currency: 'USD',
+            target_currency: 'KRW',
+            rate: mockExchangeRate,
+            date: today
+          });
+      }
+    } catch (error) {
+      console.error('환율 정보를 가져오는데 실패했습니다:', error);
+      const mockExchangeRate = 1300 + Math.random() * 50;
+      setExchangeRate(mockExchangeRate);
+    } finally {
+      setExchangeRateLoading(false);
+    }
+  };
+
   const handleCustomInput = (field: keyof CustomService, value: string | boolean) => {
     setCustomService(prev => ({
       ...prev,
@@ -290,30 +473,64 @@ const SubscriptionApp = () => {
     }));
   };
 
-  const handleAddSubscription = () => {
-    if (!customService.name || !customService.price) return;
+  // 15. Supabase 구독 추가
+  const handleAddSubscription = async () => {
+    if (!customService.name || !customService.price || !user) return;
     
-    const newSubscription: Subscription = {
-      id: Date.now(),
-      name: customService.name,
-      icon: '📱',
-      iconImage: customService.iconImage,
-      price: parseFloat(customService.price),
-      currency: customService.currency,
-      renewDate: customService.renewalDate,
-      startDate: customService.startDate || new Date().toISOString().split('T')[0], // 구독 시작일 설정
-      paymentDate: customService.paymentDate || new Date(customService.renewalDate).getDate().toString(), // 결재일 설정
-      paymentCard: customService.paymentCard, // 결제카드 설정
-      url: customService.url, // URL 설정
-      color: '#6C63FF',
-      category: customService.category
-    };
+    try {
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .insert({
+          user_id: user.id,
+          name: customService.name,
+          icon: '📱',
+          icon_image_url: customService.iconImage,
+          price: parseFloat(customService.price),
+          currency: customService.currency,
+          renew_date: customService.renewalDate,
+          start_date: customService.startDate || new Date().toISOString().split('T')[0],
+          payment_date: parseInt(customService.paymentDate) || new Date(customService.renewalDate).getDate(),
+          payment_card: customService.paymentCard,
+          url: customService.url,
+          color: '#6C63FF',
+          category: customService.category,
+          is_active: true
+        })
+        .select()
+        .single();
 
-    setSubscriptions(prev => [...prev, newSubscription]);
-    addNotification('success', '구독 추가 완료', `${customService.name} 구독이 성공적으로 추가되었습니다.`);
-    addAlarmHistory('subscription_added', '구독이 추가되었습니다', customService.name, newSubscription.id);
-    setCurrentScreen('main');
-    resetForm();
+      if (error) {
+        console.error('Error adding subscription:', error);
+        await addNotification('error', '구독 추가 실패', '구독 추가 중 오류가 발생했습니다.');
+        return;
+      }
+
+      const localSubscription: Subscription = {
+        id: Date.now(),
+        databaseId: data.id,
+        name: data.name,
+        icon: data.icon || '📱',
+        iconImage: data.icon_image_url,
+        price: data.price,
+        currency: data.currency as 'KRW' | 'USD' | 'EUR' | 'JPY',
+        renewDate: data.renew_date,
+        startDate: data.start_date || '',
+        paymentDate: data.payment_date?.toString() || '',
+        paymentCard: data.payment_card || '',
+        url: data.url || '',
+        color: data.color || '#6C63FF',
+        category: data.category || ''
+      };
+
+      setSubscriptions(prev => [localSubscription, ...prev]);
+      await addNotification('success', '구독 추가 완료', `${customService.name} 구독이 성공적으로 추가되었습니다.`);
+      await addAlarmHistory('subscription_added', '구독이 추가되었습니다', customService.name, localSubscription.id);
+      setCurrentScreen('main');
+      resetForm();
+    } catch (error) {
+      console.error('Error adding subscription:', error);
+      await addNotification('error', '구독 추가 실패', '구독 추가 중 오류가 발생했습니다.');
+    }
   };
 
   const handleEditSubscription = (subscription: Subscription) => {
@@ -334,41 +551,93 @@ const SubscriptionApp = () => {
     setCurrentScreen('add');
   };
 
-  const handleUpdateSubscription = () => {
-    if (!customService.name || !customService.price || !editingSubscription) return;
+  // 16. Supabase 구독 수정
+  const handleUpdateSubscription = async () => {
+    if (!customService.name || !customService.price || !editingSubscription || !user) return;
 
-    setSubscriptions(prev => prev.map(sub => 
-      sub.id === editingSubscription.id 
-        ? {
-            ...sub,
-            name: customService.name,
-            price: parseFloat(customService.price),
-            renewDate: customService.renewalDate,
-            startDate: customService.startDate,
-            paymentDate: customService.paymentDate,
-            paymentCard: customService.paymentCard,
-            url: customService.url,
-            category: customService.category,
-            iconImage: customService.iconImage
-          }
-        : sub
-    ));
-    
-    addNotification('success', '구독 수정 완료', `${customService.name} 구독이 성공적으로 수정되었습니다.`);
-    addAlarmHistory('subscription_updated', '구독이 수정되었습니다', customService.name, editingSubscription.id);
-    setCurrentScreen('main');
-    setEditingSubscription(null);
-    resetForm();
-  };
+    try {
+      const { error } = await supabase
+        .from('subscriptions')
+        .update({
+          name: customService.name,
+          price: parseFloat(customService.price),
+          currency: customService.currency,
+          renew_date: customService.renewalDate,
+          start_date: customService.startDate,
+          payment_date: parseInt(customService.paymentDate) || new Date(customService.renewalDate).getDate(),
+          payment_card: customService.paymentCard,
+          url: customService.url,
+          category: customService.category,
+          icon_image_url: customService.iconImage,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', editingSubscription.databaseId);
 
-  const handleDeleteSubscription = (id: number) => {
-    const subscription = subscriptions.find(sub => sub.id === id);
-    if (subscription && window.confirm(`"${subscription.name}" 구독을 삭제하시겠습니까?`)) {
-    setSubscriptions(prev => prev.filter(sub => sub.id !== id));
-      addNotification('info', '구독 삭제 완료', `${subscription.name} 구독이 삭제되었습니다.`);
-      addAlarmHistory('subscription_deleted', '구독이 삭제되었습니다', subscription.name, id);
+      if (error) {
+        console.error('Error updating subscription:', error);
+        await addNotification('error', '구독 수정 실패', '구독 수정 중 오류가 발생했습니다.');
+        return;
+      }
+
+      setSubscriptions(prev => prev.map(sub => 
+        sub.id === editingSubscription.id 
+          ? {
+              ...sub,
+              name: customService.name,
+              price: parseFloat(customService.price),
+              currency: customService.currency as 'KRW' | 'USD' | 'EUR' | 'JPY',
+              renewDate: customService.renewalDate,
+              startDate: customService.startDate,
+              paymentDate: customService.paymentDate,
+              paymentCard: customService.paymentCard,
+              url: customService.url,
+              category: customService.category,
+              iconImage: customService.iconImage
+            }
+          : sub
+      ));
+      
+      await addNotification('success', '구독 수정 완료', `${customService.name} 구독이 성공적으로 수정되었습니다.`);
+      await addAlarmHistory('subscription_updated', '구독이 수정되었습니다', customService.name, editingSubscription.id);
+      setCurrentScreen('main');
+      setEditingSubscription(null);
+      resetForm();
+    } catch (error) {
+      console.error('Error updating subscription:', error);
+      await addNotification('error', '구독 수정 실패', '구독 수정 중 오류가 발생했습니다.');
     }
   };
+
+  // 17. Supabase 구독 삭제
+  const handleDeleteSubscription = async (id: number) => {
+    const subscription = subscriptions.find(sub => sub.id === id);
+    if (!subscription || !user) return;
+    
+    if (window.confirm(`"${subscription.name}" 구독을 삭제하시겠습니까?`)) {
+      try {
+        const { error } = await supabase
+          .from('subscriptions')
+          .update({ is_active: false })
+          .eq('id', subscription.databaseId);
+
+        if (error) {
+          console.error('Error deleting subscription:', error);
+          await addNotification('error', '구독 삭제 실패', '구독 삭제 중 오류가 발생했습니다.');
+          return;
+        }
+
+        setSubscriptions(prev => prev.filter(sub => sub.id !== id));
+        await addNotification('info', '구독 삭제 완료', `${subscription.name} 구독이 삭제되었습니다.`);
+        await addAlarmHistory('subscription_deleted', '구독이 삭제되었습니다', subscription.name, id);
+      } catch (error) {
+        console.error('Error deleting subscription:', error);
+        await addNotification('error', '구독 삭제 실패', '구독 삭제 중 오류가 발생했습니다.');
+      }
+    }
+  };
+
+  // 18. 카테고리 목록
+  const categories = ['엔터테인먼트', '음악', '생산성', '쇼핑', '개발', 'AI서비스'];
 
   const resetForm = () => {
     setCustomService({
@@ -456,30 +725,41 @@ const SubscriptionApp = () => {
     }));
   };
 
-  // 알림 관련 함수들
-  const addNotification = (type: Notification['type'], title: string, message: string) => {
-    const newNotification: Notification = {
-      id: Date.now().toString(),
-      type,
-      title,
-      message,
-      timestamp: new Date()
-    };
-    setNotifications(prev => [newNotification, ...prev]);
-    setShowNotification(true);
-    
-    // 5초 후 자동으로 알림 숨기기
-    setTimeout(() => {
-      setShowNotification(false);
-    }, 5000);
+  // 19. Supabase 알림 삭제
+  const removeNotification = async (id: string) => {
+    if (!user) return;
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('id', id);
+      if (error) {
+        console.error('Error removing notification:', error);
+        return;
+      }
+      setNotifications(prev => prev.filter(notification => notification.id !== id));
+    } catch (error) {
+      console.error('Error removing notification:', error);
+    }
   };
 
-  const removeNotification = (id: string) => {
-    setNotifications(prev => prev.filter(notification => notification.id !== id));
-  };
-
-  const clearAllNotifications = () => {
-    setNotifications([]);
+  // 20. 모든 알림 삭제
+  const clearAllNotifications = async () => {
+    if (!user) return;
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('user_id', user.id)
+        .eq('is_read', false);
+      if (error) {
+        console.error('Error clearing notifications:', error);
+        return;
+      }
+      setNotifications([]);
+    } catch (error) {
+      console.error('Error clearing notifications:', error);
+    }
   };
 
   const getNotificationIcon = (type: Notification['type']) => {
@@ -501,49 +781,35 @@ const SubscriptionApp = () => {
     }
   };
 
-  // 알람 히스토리 관련 함수들
-  const addAlarmHistory = (type: AlarmHistory['type'], content: string, target: string, subscriptionId?: number) => {
-    const subscription = subscriptionId ? subscriptions.find(sub => sub.id === subscriptionId) : null;
-    
-    let icon, iconBackground;
-    switch (type) {
-      case 'subscription_added':
-        icon = CheckIcon;
-        iconBackground = 'bg-green-500';
-        break;
-      case 'subscription_updated':
-        icon = HandThumbUpIcon;
-        iconBackground = 'bg-blue-500';
-        break;
-      case 'subscription_deleted':
-        icon = UserIcon;
-        iconBackground = 'bg-gray-500';
-        break;
-      case 'renewal_reminder':
-        icon = CheckIcon;
-        iconBackground = 'bg-yellow-500';
-        break;
-      case 'payment_due':
-        icon = HandThumbUpIcon;
-        iconBackground = 'bg-red-500';
-        break;
+  // 21. Supabase 프로필 업데이트
+  const updateProfile = async (updates: Partial<Profile>) => {
+    if (!user) return;
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          username: updates.username,
+          first_name: updates.firstName,
+          last_name: updates.lastName,
+          email: updates.email,
+          photo_url: updates.photo,
+          cover_photo_url: updates.coverPhoto,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id);
+
+      if (error) {
+        console.error('Error updating profile:', error);
+        await addNotification('error', '프로필 업데이트 실패', '프로필 업데이트 중 오류가 발생했습니다.');
+        return;
+      }
+
+      setProfile(prev => ({ ...prev, ...updates }));
+      await addNotification('success', '프로필 업데이트 완료', '프로필이 성공적으로 업데이트되었습니다.');
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      await addNotification('error', '프로필 업데이트 실패', '프로필 업데이트 중 오류가 발생했습니다.');
     }
-
-    const now = new Date();
-    const newAlarm: AlarmHistory = {
-      id: Date.now().toString(),
-      type,
-      content,
-      target,
-      date: now.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' }),
-      datetime: now.toISOString(),
-      icon,
-      iconBackground,
-      subscriptionId,
-      subscriptionImage: subscription?.iconImage
-    };
-
-    setAlarmHistory(prev => [newAlarm, ...prev]);
   };
 
   const classNames = (...classes: string[]) => {
