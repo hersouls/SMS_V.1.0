@@ -75,7 +75,7 @@ interface Profile {
 
 // --- 컴포넌트 시작 ---
 const SubscriptionApp = () => {
-  const { user, profile: supabaseProfile, loading: authLoading, signOut, supabase } = useSupabase();
+  const { user, profile: supabaseProfile, loading: authLoading, signOut, supabase, updateProfile: updateSupabaseProfile } = useSupabase();
 
   // 1. 빈 값으로 모든 상태 선언
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
@@ -97,6 +97,8 @@ const SubscriptionApp = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [exchangeRate, setExchangeRate] = useState<number>(1300);
   const [exchangeRateLoading, setExchangeRateLoading] = useState(false);
+  const [isAddingSubscription, setIsAddingSubscription] = useState(false);
+  const [isUpdatingSubscription, setIsUpdatingSubscription] = useState(false);
 
   const [customService, setCustomService] = useState<CustomService>({
     name: '',
@@ -509,8 +511,9 @@ const SubscriptionApp = () => {
 
   // 15. Supabase 구독 추가
   const handleAddSubscription = async () => {
-    if (!customService.name || !customService.price || !user) return;
+    if (!customService.name || !customService.price || !user || isAddingSubscription) return;
     
+    setIsAddingSubscription(true);
     try {
       const { data, error } = await supabase
         .from('subscriptions')
@@ -536,6 +539,7 @@ const SubscriptionApp = () => {
       if (error) {
         console.error('Error adding subscription:', error);
         await addNotification('error', '구독 추가 실패', '구독 추가 중 오류가 발생했습니다.');
+        setIsAddingSubscription(false);
         return;
       }
 
@@ -561,9 +565,12 @@ const SubscriptionApp = () => {
       await addAlarmHistory('subscription_added', '구독이 추가되었습니다', customService.name, localSubscription.id);
       setCurrentScreen('main');
       resetForm();
+      setIsAddingSubscription(false);
     } catch (error) {
       console.error('Error adding subscription:', error);
-      await addNotification('error', '구독 추가 실패', '구독 추가 중 오류가 발생했습니다.');
+      const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
+      await addNotification('error', '구독 추가 실패', `구독 추가 중 오류가 발생했습니다: ${errorMessage}`);
+      setIsAddingSubscription(false);
     }
   };
 
@@ -587,8 +594,9 @@ const SubscriptionApp = () => {
 
   // 16. Supabase 구독 수정
   const handleUpdateSubscription = async () => {
-    if (!customService.name || !customService.price || !editingSubscription || !user) return;
+    if (!customService.name || !customService.price || !editingSubscription || !user || isUpdatingSubscription) return;
 
+    setIsUpdatingSubscription(true);
     try {
       const { error } = await supabase
         .from('subscriptions')
@@ -610,6 +618,7 @@ const SubscriptionApp = () => {
       if (error) {
         console.error('Error updating subscription:', error);
         await addNotification('error', '구독 수정 실패', '구독 수정 중 오류가 발생했습니다.');
+        setIsUpdatingSubscription(false);
         return;
       }
 
@@ -636,9 +645,12 @@ const SubscriptionApp = () => {
       setCurrentScreen('main');
       setEditingSubscription(null);
       resetForm();
+      setIsUpdatingSubscription(false);
     } catch (error) {
       console.error('Error updating subscription:', error);
-      await addNotification('error', '구독 수정 실패', '구독 수정 중 오류가 발생했습니다.');
+      const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
+      await addNotification('error', '구독 수정 실패', `구독 수정 중 오류가 발생했습니다: ${errorMessage}`);
+      setIsUpdatingSubscription(false);
     }
   };
 
@@ -687,6 +699,8 @@ const SubscriptionApp = () => {
       notifications: true,
       iconImage: ''
     });
+    setIsAddingSubscription(false);
+    setIsUpdatingSubscription(false);
   };
 
   const formatDate = (dateString: string) => {
@@ -819,30 +833,27 @@ const SubscriptionApp = () => {
   const updateProfile = async (updates: Partial<Profile>) => {
     if (!user) return;
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          username: updates.username,
-          first_name: updates.firstName,
-          last_name: updates.lastName,
-          email: updates.email,
-          photo_url: updates.photo,
-          cover_photo_url: updates.coverPhoto,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', user.id);
+      // Supabase 테이블 형식에 맞게 변환
+      const supabaseUpdates = {
+        username: updates.username,
+        first_name: updates.firstName,
+        last_name: updates.lastName,
+        email: updates.email,
+        photo_url: updates.photo,
+        cover_photo_url: updates.coverPhoto,
+        updated_at: new Date().toISOString()
+      };
 
-      if (error) {
-        console.error('Error updating profile:', error);
-        await addNotification('error', '프로필 업데이트 실패', '프로필 업데이트 중 오류가 발생했습니다.');
-        return;
-      }
-
+      // Supabase Context의 updateProfile 사용
+      await updateSupabaseProfile(supabaseUpdates);
+      
+      // 로컬 상태도 업데이트
       setProfile(prev => ({ ...prev, ...updates }));
       await addNotification('success', '프로필 업데이트 완료', '프로필이 성공적으로 업데이트되었습니다.');
     } catch (error) {
       console.error('Error updating profile:', error);
-      await addNotification('error', '프로필 업데이트 실패', '프로필 업데이트 중 오류가 발생했습니다.');
+      const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
+      await addNotification('error', '프로필 업데이트 실패', `프로필 업데이트 중 오류가 발생했습니다: ${errorMessage}`);
     }
   };
 
@@ -989,12 +1000,28 @@ const SubscriptionApp = () => {
     }
   };
 
-  const handleProfileSave = () => {
-    addNotification('success', '프로필 저장 완료', '프로필이 성공적으로 저장되었습니다.');
-    setCurrentScreen('main');
+  const handleProfileSave = async () => {
+    try {
+      await updateProfile(profile);
+      setCurrentScreen('main');
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      await addNotification('error', '프로필 저장 실패', '프로필 저장 중 오류가 발생했습니다.');
+    }
   };
 
   const handleProfileCancel = () => {
+    // 프로필 변경 사항을 원래 상태로 되돌림
+    if (supabaseProfile) {
+      setProfile({
+        username: supabaseProfile.username || '',
+        firstName: supabaseProfile.first_name || '',
+        lastName: supabaseProfile.last_name || '',
+        email: supabaseProfile.email || user?.email || '',
+        photo: supabaseProfile.photo_url || '',
+        coverPhoto: supabaseProfile.cover_photo_url || ''
+      });
+    }
     setCurrentScreen('main');
   };
 
@@ -1012,6 +1039,16 @@ const SubscriptionApp = () => {
     // 타임아웃 설정 (10초)
     const timeoutId = setTimeout(() => {
       console.log('Logout timeout - forcing logout');
+      // 로컬 상태 초기화
+      setProfile({
+        username: '',
+        firstName: '',
+        lastName: '',
+        email: '',
+        photo: '',
+        coverPhoto: ''
+      });
+      setSubscriptions([]);
       setIsLoggedIn(false);
       setCurrentScreen('main');
       setIsLoggingOut(false);
@@ -1023,8 +1060,20 @@ const SubscriptionApp = () => {
       await signOut();
       clearTimeout(timeoutId);
       console.log('SignOut completed');
+      
+      // 로컬 상태 초기화
+      setProfile({
+        username: '',
+        firstName: '',
+        lastName: '',
+        email: '',
+        photo: '',
+        coverPhoto: ''
+      });
+      setSubscriptions([]);
       setIsLoggedIn(false);
       setCurrentScreen('main');
+      
       // 로그아웃 후 강제로 로그인 화면 표시
       setTimeout(() => {
         console.log('Setting isLoggedIn to false');
@@ -2274,10 +2323,20 @@ const SubscriptionApp = () => {
           <div className="flex gap-3">
         <button
               onClick={handleUpdateSubscription}
-          disabled={!customService.name || !customService.price}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white py-4 rounded-2xl font-semibold transition-all duration-200 shadow-sm hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+          disabled={!customService.name || !customService.price || isUpdatingSubscription}
+              className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white py-4 rounded-2xl font-semibold transition-all duration-200 shadow-sm hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-400 flex items-center justify-center"
         >
-              수정
+              {isUpdatingSubscription ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  수정 중...
+                </>
+              ) : (
+                '수정'
+              )}
         </button>
             <button
               onClick={() => handleDeleteSubscription(editingSubscription.id)}
@@ -2289,10 +2348,20 @@ const SubscriptionApp = () => {
         ) : (
           <button
             onClick={handleAddSubscription}
-            disabled={!customService.name || !customService.price}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white py-4 rounded-2xl font-semibold transition-all duration-200 shadow-sm hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+            disabled={!customService.name || !customService.price || isAddingSubscription}
+            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white py-4 rounded-2xl font-semibold transition-all duration-200 shadow-sm hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-400 flex items-center justify-center"
           >
-            구독 추가하기
+            {isAddingSubscription ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                추가 중...
+              </>
+            ) : (
+              '구독 추가하기'
+            )}
           </button>
         )}
       </div>
