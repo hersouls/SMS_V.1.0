@@ -56,6 +56,17 @@ interface Profile {
 const SubscriptionApp = () => {
   const { user, profile: supabaseProfile, loading: authLoading, signOut, supabase } = useSupabase();
 
+  // User 상태 모니터링
+  useEffect(() => {
+    console.log('User state changed:', {
+      user: user ? 'logged in' : 'not logged in',
+      userId: user?.id,
+      email: user?.email,
+      authLoading
+    });
+    console.log('Supabase instance:', supabase);
+  }, [user, authLoading, supabase]);
+
   // 상태 선언
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -120,12 +131,23 @@ const SubscriptionApp = () => {
 
   // 구독 추가 함수
   const handleAddSubscription = async () => {
+    console.log('handleAddSubscription called');
+    console.log('customService:', customService);
+    console.log('user:', user);
+    
     if (!customService.name || !customService.price || !user) {
+      console.log('Validation failed:', { 
+        name: customService.name, 
+        price: customService.price, 
+        user: !!user 
+      });
       await addNotification('warning', '입력 확인', '서비스명과 가격을 입력해주세요.');
       return;
     }
     
     try {
+      console.log('Starting subscription addition...');
+      
       // 날짜 필드 처리: 빈 문자열인 경우 null로 변환
       const renewDate = customService.renewalDate || null;
       const startDate = customService.startDate || null;
@@ -139,26 +161,32 @@ const SubscriptionApp = () => {
         paymentDate = new Date(renewDate).getDate();
       }
 
+      const insertData = {
+        user_id: user.id,
+        name: customService.name,
+        icon: '📱',
+        icon_image_url: customService.iconImage || null,
+        price: parseFloat(customService.price),
+        currency: customService.currency,
+        renew_date: renewDate,
+        start_date: startDate,
+        payment_date: paymentDate,
+        payment_card: customService.paymentCard || null,
+        url: customService.url || null,
+        color: '#6C63FF',
+        category: customService.category || null,
+        is_active: true
+      };
+      
+      console.log('Inserting data:', insertData);
+
       const { data, error } = await supabase
         .from('subscriptions')
-        .insert({
-          user_id: user.id,
-          name: customService.name,
-          icon: '📱',
-          icon_image_url: customService.iconImage || null,
-          price: parseFloat(customService.price),
-          currency: customService.currency,
-          renew_date: renewDate,
-          start_date: startDate,
-          payment_date: paymentDate,
-          payment_card: customService.paymentCard || null,
-          url: customService.url || null,
-          color: '#6C63FF',
-          category: customService.category || null,
-          is_active: true
-        })
+        .insert(insertData)
         .select()
         .single();
+
+      console.log('Supabase response:', { data, error });
 
       if (error) {
         console.error('Error adding subscription:', error);
@@ -183,12 +211,14 @@ const SubscriptionApp = () => {
         category: data.category || ''
       };
 
+      console.log('Adding to local state:', localSubscription);
       setSubscriptions(prev => [localSubscription, ...prev]);
+      console.log('Success! Showing notification and navigating...');
       await addNotification('success', '구독 추가 완료', `${customService.name} 구독이 성공적으로 추가되었습니다.`);
       setCurrentScreen('main');
       resetForm();
     } catch (error) {
-      console.error('Error adding subscription:', error);
+      console.error('Unexpected error adding subscription:', error);
       await addNotification('error', '구독 추가 실패', '구독 추가 중 오류가 발생했습니다.');
     }
   };
@@ -663,7 +693,12 @@ const SubscriptionApp = () => {
 
                              {/* 저장 버튼 */}
                <button
-                 onClick={handleAddSubscription}
+                 onClick={() => {
+                   console.log('구독 추가하기 버튼 클릭됨');
+                   console.log('버튼 disabled 상태:', !customService.name || !customService.price);
+                   console.log('form data:', { name: customService.name, price: customService.price });
+                   handleAddSubscription();
+                 }}
                  disabled={!customService.name || !customService.price}
                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white py-4 rounded-2xl font-semibold transition-all duration-200 shadow-sm hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
                >
