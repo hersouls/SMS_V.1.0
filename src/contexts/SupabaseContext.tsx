@@ -69,9 +69,24 @@ export const SupabaseProvider: React.FC<SupabaseProviderProps> = ({ children }) 
       
       setSession(session);
       setUser(session?.user ?? null);
+      
       if (session?.user) {
         console.log('User logged in, fetching profile...');
         await fetchProfile(session.user.id, session.user);
+        
+        // OAuth 로그인 성공 후 URL 정리
+        if (event === 'SIGNED_IN' && (session.user.app_metadata?.provider === 'google' || session.user.app_metadata?.provider === 'kakao')) {
+          const currentURL = window.location.href;
+          const urlObj = new URL(currentURL);
+          
+          // OAuth 콜백 파라미터가 있는 경우 정리
+          if (urlObj.searchParams.has('access_token') || 
+              urlObj.searchParams.has('refresh_token') || 
+              urlObj.hash.includes('access_token')) {
+            const cleanURL = `${urlObj.origin}/`;
+            window.history.replaceState({}, document.title, cleanURL);
+          }
+        }
       } else {
         console.log('User logged out, clearing profile...');
         setProfile(null);

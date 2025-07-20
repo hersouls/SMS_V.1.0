@@ -155,14 +155,48 @@ const SubscriptionApp = () => {
     }
   }, [user, authLoading, supabaseProfile]);
 
-  // 3. 환율 정보 가져오기
+  // 3. URL 해시 처리 및 정규화
+  useEffect(() => {
+    // OAuth 콜백 후 URL 정리
+    const handleURLCleanup = () => {
+      const currentURL = window.location.href;
+      const urlObj = new URL(currentURL);
+      
+      // OAuth 콜백 파라미터가 있는 경우 정리
+      if (urlObj.searchParams.has('access_token') || 
+          urlObj.searchParams.has('refresh_token') || 
+          urlObj.hash.includes('access_token')) {
+        // 파라미터와 해시를 제거하고 깔끔한 URL로 리다이렉트
+        const cleanURL = `${urlObj.origin}/`;
+        window.history.replaceState({}, document.title, cleanURL);
+      }
+      
+      // 빈 해시(#)만 있는 경우도 정리
+      if (urlObj.hash === '#') {
+        const cleanURL = `${urlObj.origin}${urlObj.pathname}${urlObj.search}`;
+        window.history.replaceState({}, document.title, cleanURL);
+      }
+    };
+
+    // 컴포넌트 마운트 시 URL 정리
+    handleURLCleanup();
+    
+    // popstate 이벤트 리스너 추가 (뒤로가기/앞으로가기 시)
+    window.addEventListener('popstate', handleURLCleanup);
+    
+    return () => {
+      window.removeEventListener('popstate', handleURLCleanup);
+    };
+  }, []);
+
+  // 4. 환율 정보 가져오기
   useEffect(() => {
     fetchExchangeRate();
     const interval = setInterval(fetchExchangeRate, 60 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
 
-  // 4. 사용자 전체 데이터 불러오기
+  // 5. 사용자 전체 데이터 불러오기
   const loadUserData = async () => {
     if (!user) return;
     try {
@@ -176,7 +210,7 @@ const SubscriptionApp = () => {
     }
   };
 
-  // 5. Supabase 구독 데이터 로딩
+  // 6. Supabase 구독 데이터 로딩
   const loadUserSubscriptions = async () => {
     if (!user) return;
     try {
@@ -214,7 +248,7 @@ const SubscriptionApp = () => {
     }
   };
 
-  // 6. Supabase 알림 히스토리 로딩
+  // 7. Supabase 알림 히스토리 로딩
   const loadUserAlarmHistory = async () => {
     if (!user) return;
     try {
