@@ -44,6 +44,33 @@ React와 TypeScript로 개발된 구독 서비스 관리 애플리케이션입�
 - **State Management**: React Hooks
 - **Build Tool**: Create React App
 
+## 프로젝트 구조
+
+```
+/
+├── src/                    # 소스 코드
+│   ├── components/         # React 컴포넌트
+│   ├── contexts/          # React Context
+│   ├── hooks/             # 커스텀 훅
+│   ├── lib/               # 유틸리티 라이브러리
+│   ├── types/             # TypeScript 타입 정의
+│   └── App.tsx           # 메인 앱 컴포넌트
+├── public/                # 정적 파일
+├── docs/                  # 프로젝트 문서
+│   ├── OPTIMIZATION_SUMMARY.md
+│   ├── SUPABASE_MIGRATION_SUMMARY.md
+│   ├── test-setup-checklist.md
+│   └── Google_OAuth_Setup_Guide.md
+├── database/              # 데이터베이스 관련 파일
+│   ├── supabase-schema.sql
+│   ├── supabase-sql-editor.sql
+│   └── supabase-test-queries.sql
+├── .github/              # GitHub Actions 워크플로우
+│   └── workflows/
+│       └── deploy.yml    # 자동 배포 설정
+└── package.json          # 프로젝트 설정
+```
+
 ## 설치 및 실행
 
 ```bash
