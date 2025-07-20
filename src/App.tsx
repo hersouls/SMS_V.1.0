@@ -2279,7 +2279,7 @@ const SubscriptionApp = () => {
         rel="stylesheet"
       />
       
-            {/* 헤더 영역 */}
+      {/* 헤더 영역 */}
       <CommonHeader />
       
       {/* 페이지 제목 */}
@@ -2292,10 +2292,10 @@ const SubscriptionApp = () => {
       {/* 메인 콘텐츠 */}
       <div className="bg-gray-50 rounded-t-3xl px-4 pt-6 pb-24 min-h-[75vh] -mt-4 relative z-10">
         {/* 구독 정보 입력 폼 */}
-          <div className="bg-white rounded-2xl p-6 shadow-md mb-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">구독 정보</h3>
-            
-            <div className="space-y-4">
+        <div className="bg-white rounded-2xl p-6 shadow-md mb-6">
+          <h3 className="text-lg font-bold text-gray-900 mb-4">구독 정보</h3>
+          
+          <div className="space-y-4">
             {/* 아이콘 이미지 업로드 */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -2345,122 +2345,212 @@ const SubscriptionApp = () => {
               </div>
             </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Tag className="w-4 h-4 inline mr-1" />
-                  서비스 이름
-                </label>
-                <input
-                  type="text"
-                  value={customService.name}
-                  onChange={(e) => handleCustomInput('name', e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-50 rounded-xl border-0 focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-900"
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Tag className="w-4 h-4 inline mr-1" />
+                서비스 이름
+              </label>
+              <input
+                type="text"
+                value={customService.name}
+                onChange={(e) => handleCustomInput('name', e.target.value)}
+                className="w-full px-4 py-3 bg-gray-50 rounded-xl border-0 focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-900"
                 placeholder="서비스 이름을 입력하세요"
-                />
-              </div>
+              />
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Banknote className="w-4 h-4 inline mr-1" />
-                  월 구독료
-                </label>
-                <div className="flex gap-3">
-                  <select
-                    value={customService.currency}
-                    onChange={(e) => handleCustomInput('currency', e.target.value)}
-                    className="w-1/3 px-4 py-3 bg-gray-50 rounded-xl border-0 focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-900"
-                  >
-                    <option value="USD">달러</option>
-                    <option value="KRW">원화</option>
-                  </select>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Banknote className="w-4 h-4 inline mr-1" />
+                월 구독료
+              </label>
+              <div className="flex gap-3">
+                <select
+                  value={customService.currency}
+                  onChange={(e) => handleCustomInput('currency', e.target.value)}
+                  className="w-1/3 px-4 py-3 bg-gray-50 rounded-xl border-0 focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-900"
+                >
+                  <option value="USD">달러</option>
+                  <option value="KRW">원화</option>
+                </select>
                 <input
                   type="number"
                   step="0.01"
                   value={customService.price}
                   onChange={(e) => handleCustomInput('price', e.target.value)}
-                    className="flex-1 px-4 py-3 bg-gray-50 rounded-xl border-0 focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-900 text-right"
+                  className="flex-1 px-4 py-3 bg-gray-50 rounded-xl border-0 focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-900 text-right"
                   placeholder="0.00"
                 />
-                </div>
               </div>
-             
-              <div className="min-h-screen bg-gradient-to-b from-blue-900 via-blue-800 to-blue-700" style={{ fontFamily: "'Nanum Gothic', sans-serif" }}>
-                <link
-                  href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&display=swap"
-                  rel="stylesheet"
-                />
-            
-                {/* 헤더 영역 */}
-                <CommonHeader />
-            
-                {/* 페이지 제목 */}
-                <div className="px-4 mb-6">
-                  <h1 className="text-white text-2xl font-bold tracking-tight">
-                    {editingSubscription ? '구독 수정' : '구독 추가'}
-                  </h1>
-                </div>
-            
-                {/* 메인 콘텐츠 */}
-                <div className="bg-gray-50 rounded-t-3xl px-4 pt-6 pb-24 min-h-[75vh] -mt-4 relative z-10">
-                  {/* 구독 정보 입력 폼 */}
-                  <div className="bg-white rounded-2xl p-6 shadow-md mb-6">
-                    <h3 className="text-lg font-bold text-gray-900 mb-4">구독 정보</h3>
-                    <div className="space-y-4">
-                      {/* ...구독 입력 폼들... */}
-                      {/* 생략 ... */}
-            
-                      {editingSubscription ? (
-                        <div className="flex gap-3">
-                          {/* 수정, 삭제 버튼 ... */}
-                        </div>
-                      ) : (
-                        <>
-                          <button
-                            onClick={handleAddSubscription}
-                            disabled={!customService.name || !customService.price || !customService.renewalDate || isAddingSubscription}
-                            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white py-4 rounded-2xl font-semibold transition-all duration-200 shadow-sm hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-400 flex items-center justify-center"
-                          >
-                            {isAddingSubscription ? (
-                              <>
-                                <svg /* ... */ />
-                                추가 중...
-                              </>
-                            ) : (
-                              '구독 추가하기'
-                            )}
-                          </button>
-            
-                          {/* 필수 필드 안내 */}
-                          {(!customService.name || !customService.price || !customService.renewalDate) && (
-                            <div className="mt-2 text-center">
-                              <p className="text-sm text-red-500">
-                                필수 입력 사항: {[
-                                  !customService.name && '서비스 이름',
-                                  !customService.price && '월 구독료',
-                                  !customService.renewalDate && '구독 갱신일'
-                                ].filter(Boolean).join(', ')}
-                              </p>
-                            </div>
-                          )}
-            
-                          {/* 로딩 중 오버레이 */}
-                          {isAddingSubscription && (
-                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                              <div className="bg-white rounded-2xl p-6 shadow-lg">
-                                <div className="flex items-center space-x-3">
-                                  <svg /* ... */ />
-                                  <span className="text-gray-700 font-medium">구독을 추가하고 있습니다...</span>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </>
-                      )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <CalendarRange className="w-4 h-4 inline mr-1" />
+                구독 갱신일
+              </label>
+              <input
+                type="date"
+                value={customService.renewalDate}
+                onChange={(e) => handleCustomInput('renewalDate', e.target.value)}
+                className="w-full px-4 py-3 bg-gray-50 rounded-xl border-0 focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-900"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Calendar className="w-4 h-4 inline mr-1" />
+                시작일
+              </label>
+              <input
+                type="date"
+                value={customService.startDate}
+                onChange={(e) => handleCustomInput('startDate', e.target.value)}
+                className="w-full px-4 py-3 bg-gray-50 rounded-xl border-0 focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-900"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <DollarSign className="w-4 h-4 inline mr-1" />
+                월 결제일
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="31"
+                value={customService.paymentDate}
+                onChange={(e) => handleCustomInput('paymentDate', e.target.value)}
+                className="w-full px-4 py-3 bg-gray-50 rounded-xl border-0 focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-900"
+                placeholder="매월 결제일 (1-31)"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <CreditCard className="w-4 h-4 inline mr-1" />
+                결제 카드
+              </label>
+              <input
+                type="text"
+                value={customService.paymentCard}
+                onChange={(e) => handleCustomInput('paymentCard', e.target.value)}
+                className="w-full px-4 py-3 bg-gray-50 rounded-xl border-0 focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-900"
+                placeholder="사용 카드 정보"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Globe className="w-4 h-4 inline mr-1" />
+                웹사이트 URL
+              </label>
+              <input
+                type="url"
+                value={customService.url}
+                onChange={(e) => handleCustomInput('url', e.target.value)}
+                className="w-full px-4 py-3 bg-gray-50 rounded-xl border-0 focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-900"
+                placeholder="https://..."
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Tag className="w-4 h-4 inline mr-1" />
+                카테고리
+              </label>
+              <select
+                value={customService.category}
+                onChange={(e) => handleCustomInput('category', e.target.value)}
+                className="w-full px-4 py-3 bg-gray-50 rounded-xl border-0 focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-900"
+              >
+                <option value="">카테고리 선택</option>
+                {categories.slice(1).map(category => (
+                  <option key={category} value={category}>{category}</option>
+                ))}
+              </select>
+            </div>
+
+            {editingSubscription ? (
+              <div className="flex gap-3">
+                <button
+                  onClick={handleUpdateSubscription}
+                  disabled={!customService.name || !customService.price || !customService.renewalDate || isUpdatingSubscription}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white py-4 rounded-2xl font-semibold transition-all duration-200 shadow-sm hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-400 flex items-center justify-center"
+                >
+                  {isUpdatingSubscription ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      수정 중...
+                    </>
+                  ) : (
+                    '구독 수정하기'
+                  )}
+                </button>
+                <button
+                  onClick={() => handleDeleteSubscription(editingSubscription.id)}
+                  className="px-6 bg-red-600 hover:bg-red-700 text-white py-4 rounded-2xl font-semibold transition-all duration-200 shadow-sm hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-red-400"
+                >
+                  삭제
+                </button>
+              </div>
+            ) : (
+              <>
+                <button
+                  onClick={handleAddSubscription}
+                  disabled={!customService.name || !customService.price || !customService.renewalDate || isAddingSubscription}
+                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white py-4 rounded-2xl font-semibold transition-all duration-200 shadow-sm hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-400 flex items-center justify-center"
+                >
+                  {isAddingSubscription ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      추가 중...
+                    </>
+                  ) : (
+                    '구독 추가하기'
+                  )}
+                </button>
+
+                {/* 필수 필드 안내 */}
+                {(!customService.name || !customService.price || !customService.renewalDate) && (
+                  <div className="mt-2 text-center">
+                    <p className="text-sm text-red-500">
+                      필수 입력 사항: {[
+                        !customService.name && '서비스 이름',
+                        !customService.price && '월 구독료',
+                        !customService.renewalDate && '구독 갱신일'
+                      ].filter(Boolean).join(', ')}
+                    </p>
+                  </div>
+                )}
+
+                {/* 로딩 중 오버레이 */}
+                {isAddingSubscription && (
+                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-2xl p-6 shadow-lg">
+                      <div className="flex items-center space-x-3">
+                        <svg className="animate-spin h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span className="text-gray-700 font-medium">구독을 추가하고 있습니다...</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </div>
-            );
-            
-            // 👇 반드시 return문 다음, 파일 맨 아래!
-            export default SubscriptionApp;
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default SubscriptionApp;
