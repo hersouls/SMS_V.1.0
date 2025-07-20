@@ -459,7 +459,7 @@ const SubscriptionApp = () => {
         currency: data.currency,
         renewDate: data.renew_date,
         startDate: data.start_date,
-        paymentDate: data.payment_date?.toString(),
+        paymentDate: data.payment_date?.toString() || '',
         paymentCard: data.payment_card,
         url: data.url,
         color: data.color,
