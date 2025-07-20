@@ -2572,10 +2572,9 @@ const SubscriptionApp = () => {
               </div>
             </div>
           )}
-        )}
+        </div>
       </div>
-    </div>
-  );
-};
+    );
+  };
 
 export default SubscriptionApp;
