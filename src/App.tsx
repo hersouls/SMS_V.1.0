@@ -2499,82 +2499,49 @@ const SubscriptionApp = () => {
 
         {/* 액션 버튼 */}
         {editingSubscription ? (
-          <div className="flex gap-3">
-        <button
-              onClick={handleUpdateSubscription}
-          disabled={!customService.name || !customService.price || isUpdatingSubscription}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white py-4 rounded-2xl font-semibold transition-all duration-200 shadow-sm hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-400 flex items-center justify-center"
-        >
-              {isUpdatingSubscription ? (
+          <div className="flex gap-3">...</div>
+        ) : (
+          <>
+            <button
+              onClick={handleAddSubscription}
+              disabled={!customService.name || !customService.price || !customService.renewalDate || isAddingSubscription}
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white py-4 rounded-2xl font-semibold transition-all duration-200 shadow-sm hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-400 flex items-center justify-center"
+            >
+              {isAddingSubscription ? (
                 <>
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  수정 중...
+                  <svg ...>...</svg>
+                  추가 중...
                 </>
               ) : (
-                '수정'
+                '구독 추가하기'
               )}
-        </button>
-            <button
-              onClick={() => handleDeleteSubscription(editingSubscription.id)}
-              className="flex-1 rounded-md bg-indigo-50 px-3.5 py-2.5 text-sm font-semibold text-indigo-600 shadow-xs hover:bg-indigo-100"
-            >
-              삭제
             </button>
-          </div>
-        ) : (
-          <button
-            onClick={handleAddSubscription}
-            disabled={!customService.name || !customService.price || !customService.renewalDate || isAddingSubscription}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white py-4 rounded-2xl font-semibold transition-all duration-200 shadow-sm hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-400 flex items-center justify-center"
-          >
-            {isAddingSubscription ? (
-              <>
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                추가 중...
-              </>
-            ) : (
-              '구독 추가하기'
+            {/* 필수 필드 안내 */}
+            {(!customService.name || !customService.price || !customService.renewalDate) && (
+              <div className="mt-2 text-center">
+                <p className="text-sm text-red-500">
+                  필수 입력 사항: {
+                    [
+                      !customService.name && '서비스 이름',
+                      !customService.price && '월 구독료',
+                      !customService.renewalDate && '구독 갱신일'
+                    ].filter(Boolean).join(', ')
+                  }
+                </p>
+              </div>
             )}
-          </button>        
-          {/* 필수 필드 안내 */}
-          {(!customService.name || !customService.price || !customService.renewalDate) && (
-            <div className="mt-2 text-center">
-              <p className="text-sm text-red-500">
-                필수 입력 사항: {
-                  [
-                    !customService.name && '서비스 이름',
-                    !customService.price && '월 구독료',
-                    !customService.renewalDate && '구독 갱신일'
-                  ]
-                  .filter(Boolean)
-                  .join(', ')
-                }
-              </p>
-            </div>
-          )}
-          {/* 로딩 중 오버레이 */}
-          {isAddingSubscription && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-white rounded-2xl p-6 shadow-lg">
-                <div className="flex items-center space-x-3">
-                  <svg className="animate-spin h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  <span className="text-gray-700 font-medium">구독을 추가하고 있습니다...</span>
+            {/* 로딩 중 오버레이 */}
+            {isAddingSubscription && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white rounded-2xl p-6 shadow-lg">
+                  <div className="flex items-center space-x-3">
+                    <svg ...>...</svg>
+                    <span className="text-gray-700 font-medium">구독을 추가하고 있습니다...</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
+            )}
+          </>
+        )}
 
 export default SubscriptionApp;
