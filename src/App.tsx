@@ -555,6 +555,8 @@ const SubscriptionApp = () => {
         console.error('Error adding subscription:', error);
         await addNotification('error', '구독 추가 실패', '구독 추가 중 오류가 발생했습니다.');
         setIsAddingSubscription(false);
+        setCurrentScreen('main');
+        resetForm();
         return;
       }
 
@@ -589,9 +591,6 @@ const SubscriptionApp = () => {
       } catch (alarmError) {
         console.error('Error adding alarm history:', alarmError);
       }
-      
-      setCurrentScreen('main');
-      resetForm();
     } catch (error) {
       console.error('Error adding subscription:', error);
       const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
@@ -602,6 +601,8 @@ const SubscriptionApp = () => {
       }
     } finally {
       setIsAddingSubscription(false);
+      setCurrentScreen('main');
+      resetForm();
     }
   };
 
@@ -664,6 +665,9 @@ const SubscriptionApp = () => {
         console.error('Error updating subscription:', error);
         await addNotification('error', '구독 수정 실패', '구독 수정 중 오류가 발생했습니다.');
         setIsUpdatingSubscription(false);
+        setCurrentScreen('main');
+        setEditingSubscription(null);
+        resetForm();
         return;
       }
 
@@ -697,10 +701,6 @@ const SubscriptionApp = () => {
       } catch (alarmError) {
         console.error('Error adding alarm history:', alarmError);
       }
-      
-      setCurrentScreen('main');
-      setEditingSubscription(null);
-      resetForm();
     } catch (error) {
       console.error('Error updating subscription:', error);
       const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
@@ -711,6 +711,9 @@ const SubscriptionApp = () => {
       }
     } finally {
       setIsUpdatingSubscription(false);
+      setCurrentScreen('main');
+      setEditingSubscription(null);
+      resetForm();
     }
   };
 
@@ -1081,12 +1084,12 @@ const SubscriptionApp = () => {
     setIsSavingProfile(true);
     try {
       await updateProfile(profile);
-      setCurrentScreen('main');
     } catch (error) {
       console.error('Error saving profile:', error);
       await addNotification('error', '프로필 저장 실패', '프로필 저장 중 오류가 발생했습니다.');
     } finally {
       setIsSavingProfile(false);
+      setCurrentScreen('main');
     }
   };
 
