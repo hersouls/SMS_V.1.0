@@ -1,29 +1,65 @@
 import React, { useState, useEffect } from 'react';
-// ... (아이콘 및 컴포넌트 import 생략)
+import {
+  Search, Check, Calendar, DollarSign, Tag, Bell, User, Home, Menu, Plus, Edit2, Trash2, Upload, Image,
+  Settings, ChevronLeft, ChevronRight, CreditCard, Globe, Banknote, CalendarRange
+} from 'lucide-react';
+import { Transition } from '@headlessui/react';
+import {
+  CheckCircleIcon, XMarkIcon, CheckIcon, HandThumbUpIcon, UserIcon, PhotoIcon, UserCircleIcon
+} from '@heroicons/react/24/outline';
+import { useSupabase } from './contexts/SupabaseContext';
+import { LoginScreen } from './components/LoginScreen';
+import { SupabaseTest } from './components/SupabaseTest';
 
+// --- 타입 정의(생략 가능) ---
+/* ...Subscription, AlarmHistory, Notification, CustomService, Profile... */
+
+// --- 컴포넌트 시작 ---
 const SubscriptionApp = () => {
   const { user, profile: supabaseProfile, loading: authLoading, signOut, supabase } = useSupabase();
 
-  // 1. 하드코딩된 초기값 없이 "빈 배열/빈 값"으로 선언
+  // 1. 빈 값으로 모든 상태 선언
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [alarmHistory, setAlarmHistory] = useState<AlarmHistory[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [showNotification, setShowNotification] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [currentScreen, setCurrentScreen] = useState<'main' | 'add' | 'manage' | 'detail' | 'notifications' | 'alarm-history' | 'profile' | 'supabase-test'>('main');
+  const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null);
+  const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null);
   const [profile, setProfile] = useState<Profile>({
     username: '',
     firstName: '',
     lastName: '',
     email: ''
   });
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  // ... (그 외 상태들 동일하게)
+  // 기타 상태
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [exchangeRate, setExchangeRate] = useState<number>(1300);
+  const [exchangeRateLoading, setExchangeRateLoading] = useState(false);
 
-  // 2. 사용자 인증 변화 감지: 로그인/로그아웃/프로필 변경
+  const [customService, setCustomService] = useState<CustomService>({
+    name: '',
+    price: '',
+    currency: 'KRW',
+    renewalDate: '',
+    startDate: '',
+    paymentDate: '',
+    paymentCard: '',
+    url: '',
+    category: '',
+    notifications: true,
+    iconImage: ''
+  });
+
+  // 2. 인증 상태 변화 감지
   useEffect(() => {
     if (user && !authLoading) {
       setIsLoggedIn(true);
       loadUserData();
-      // 프로필 동기화는 기존 코드대로
+
+      // 프로필 동기화
       if (supabaseProfile) {
         setProfile({
           username: supabaseProfile.username || '',
@@ -60,7 +96,14 @@ const SubscriptionApp = () => {
     }
   }, [user, authLoading, supabaseProfile]);
 
-  // 3. 모든 사용자 데이터 불러오는 메인 함수
+  // 3. 환율 정보 가져오기
+  useEffect(() => {
+    fetchExchangeRate();
+    const interval = setInterval(fetchExchangeRate, 60 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // 4. 사용자 전체 데이터 불러오기
   const loadUserData = async () => {
     if (!user) return;
     try {
@@ -74,7 +117,7 @@ const SubscriptionApp = () => {
     }
   };
 
-  // 4. Supabase에서 구독 데이터 불러오기
+  // 5. Supabase 구독 데이터 로딩
   const loadUserSubscriptions = async () => {
     if (!user) return;
     try {
@@ -112,7 +155,7 @@ const SubscriptionApp = () => {
     }
   };
 
-  // 5. Supabase에서 알림 데이터 불러오기
+  // 6. Supabase 알림 데이터 로딩
   const loadUserNotifications = async () => {
     if (!user) return;
     try {
@@ -139,7 +182,7 @@ const SubscriptionApp = () => {
     }
   };
 
-  // 6. Supabase에서 알람 히스토리 불러오기
+  // 7. Supabase 알람 히스토리 데이터 로딩
   const loadUserAlarmHistory = async () => {
     if (!user) return;
     try {
@@ -153,25 +196,53 @@ const SubscriptionApp = () => {
         console.error('Error loading alarm history:', error);
         return;
       }
-      const localAlarmHistory: AlarmHistory[] = data.map(alarm => ({
-        id: alarm.id,
-        type: alarm.type,
-        content: alarm.content,
-        target: alarm.target,
-        date: new Date(alarm.created_at).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' }),
-        datetime: alarm.created_at,
-        icon: /* ... 타입 매칭 로직 생략 ... */,
-        iconBackground: /* ... 타입 매칭 로직 생략 ... */,
-        subscriptionId: parseInt(alarm.subscription_id || '0') || undefined,
-        subscriptionImage: alarm.subscription_image_url || undefined
-      }));
+      const localAlarmHistory: AlarmHistory[] = data.map(alarm => {
+        let icon, iconBackground;
+        switch (alarm.type) {
+          case 'subscription_added':
+            icon = CheckIcon;
+            iconBackground = 'bg-green-500';
+            break;
+          case 'subscription_updated':
+            icon = HandThumbUpIcon;
+            iconBackground = 'bg-blue-500';
+            break;
+          case 'subscription_deleted':
+            icon = UserIcon;
+            iconBackground = 'bg-gray-500';
+            break;
+          case 'renewal_reminder':
+            icon = CheckIcon;
+            iconBackground = 'bg-yellow-500';
+            break;
+          case 'payment_due':
+            icon = HandThumbUpIcon;
+            iconBackground = 'bg-red-500';
+            break;
+          default:
+            icon = CheckIcon;
+            iconBackground = 'bg-gray-500';
+        }
+        return {
+          id: alarm.id,
+          type: alarm.type as AlarmHistory['type'],
+          content: alarm.content,
+          target: alarm.target,
+          date: new Date(alarm.created_at).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' }),
+          datetime: alarm.created_at,
+          icon,
+          iconBackground,
+          subscriptionId: parseInt(alarm.subscription_id || '0') || undefined,
+          subscriptionImage: alarm.subscription_image_url || undefined
+        };
+      });
       setAlarmHistory(localAlarmHistory);
     } catch (error) {
       console.error('Unexpected error loading alarm history:', error);
     }
   };
 
-  // 7. 알림 추가 함수 (Supabase + 로컬)
+  // 8. 알림 추가 함수
   const addNotification = async (type: Notification['type'], title: string, message: string) => {
     const newNotification: Notification = {
       id: Date.now().toString(),
@@ -202,9 +273,36 @@ const SubscriptionApp = () => {
     setTimeout(() => setShowNotification(false), 5000);
   };
 
-  // 8. 알람 히스토리 추가 함수 (Supabase + 로컬)
+  // 9. 알람 히스토리 추가 함수
   const addAlarmHistory = async (type: AlarmHistory['type'], content: string, target: string, subscriptionId?: number) => {
     if (!user) return;
+    const subscription = subscriptionId ? subscriptions.find(sub => sub.id === subscriptionId) : null;
+    let icon, iconBackground;
+    switch (type) {
+      case 'subscription_added':
+        icon = CheckIcon;
+        iconBackground = 'bg-green-500';
+        break;
+      case 'subscription_updated':
+        icon = HandThumbUpIcon;
+        iconBackground = 'bg-blue-500';
+        break;
+      case 'subscription_deleted':
+        icon = UserIcon;
+        iconBackground = 'bg-gray-500';
+        break;
+      case 'renewal_reminder':
+        icon = CheckIcon;
+        iconBackground = 'bg-yellow-500';
+        break;
+      case 'payment_due':
+        icon = HandThumbUpIcon;
+        iconBackground = 'bg-red-500';
+        break;
+      default:
+        icon = CheckIcon;
+        iconBackground = 'bg-gray-500';
+    }
     const now = new Date();
     const newAlarm: AlarmHistory = {
       id: Date.now().toString(),
@@ -213,10 +311,10 @@ const SubscriptionApp = () => {
       target,
       date: now.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' }),
       datetime: now.toISOString(),
-      icon: /* ... 타입 매칭 로직 ... */,
-      iconBackground: /* ... 타입 매칭 로직 ... */,
+      icon,
+      iconBackground,
       subscriptionId,
-      subscriptionImage: /* ... */
+      subscriptionImage: subscription?.iconImage
     };
     setAlarmHistory(prev => [newAlarm, ...prev]);
     try {
@@ -227,8 +325,8 @@ const SubscriptionApp = () => {
           type,
           content,
           target,
-          subscription_id: subscriptionId || null,
-          subscription_image_url: /* ... */
+          subscription_id: subscription?.databaseId || null,
+          subscription_image_url: subscription?.iconImage || null,
         });
       if (error) {
         console.error('Error saving alarm history:', error);
@@ -238,7 +336,11 @@ const SubscriptionApp = () => {
     }
   };
 
-  // ... (이하 나머지 UI/이벤트 핸들러, 렌더링 분기, 기존 코드와 동일하게 진행)
+  // --- 이하 나머지 UI/핸들러/렌더링 분기 기존과 동일 ---
+  // ... 기존 코드 활용 (구독 추가/수정/달력/프로필 등)
+
 };
 
 export default SubscriptionApp;
+
+// 본문 종료
