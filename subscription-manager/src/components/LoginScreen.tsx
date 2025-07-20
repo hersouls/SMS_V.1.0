@@ -38,17 +38,28 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
     setError('');
     
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      console.log('Starting Google OAuth...');
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin
+          redirectTo: `${window.location.origin}`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
         }
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Google OAuth error:', error);
+        throw error;
+      }
+      
+      console.log('Google OAuth initiated successfully');
+      // OAuth는 리다이렉트를 통해 처리되므로 여기서는 로딩 상태를 유지
     } catch (error: any) {
-      setError(error.message);
-    } finally {
+      console.error('Google sign-in error:', error);
+      setError(`Google 로그인 실패: ${error.message}`);
       setLoading(false);
     }
   };
@@ -58,17 +69,23 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
     setError('');
     
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      console.log('Starting Kakao OAuth...');
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'kakao',
         options: {
-          redirectTo: window.location.origin
+          redirectTo: `${window.location.origin}`
         }
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Kakao OAuth error:', error);
+        throw error;
+      }
+      
+      console.log('Kakao OAuth initiated successfully');
     } catch (error: any) {
-      setError(error.message);
-    } finally {
+      console.error('Kakao sign-in error:', error);
+      setError(`카카오 로그인 실패: ${error.message}`);
       setLoading(false);
     }
   };

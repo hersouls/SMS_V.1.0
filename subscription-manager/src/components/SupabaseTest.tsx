@@ -67,7 +67,7 @@ export const SupabaseTest: React.FC = () => {
       // 7. 실시간 구독 테스트
       const channel = supabase
         .channel('test')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'subscriptions' }, (payload: any) => {
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'subscriptions' }, (payload) => {
           addTestResult(`✅ 실시간 구독 테스트 성공: ${payload.eventType} 이벤트`);
         })
         .subscribe();
