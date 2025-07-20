@@ -14,7 +14,7 @@ import { SupabaseTest } from './components/SupabaseTest';
 // --- 타입 정의 ---
 interface Subscription {
   id: number;
-  databaseId?: number;
+  databaseId?: string;  // number에서 string으로 변경
   name: string;
   icon: string;
   iconImage?: string;
@@ -489,6 +489,22 @@ const SubscriptionApp = () => {
       console.error('Unexpected error adding subscription:', error);
       await addNotification('error', '구독 추가 실패', '예상치 못한 오류가 발생했습니다.');
     }
+    const handleEditSubscription = (subscription: Subscription) => {
+    setEditingSubscription(subscription);
+    setCustomService({
+      name: subscription.name,
+      price: subscription.price.toString(),
+      currency: subscription.currency,
+      renewalDate: subscription.renewDate,
+      startDate: subscription.startDate,
+      paymentDate: subscription.paymentDate || '',
+      paymentCard: subscription.paymentCard || '',
+      url: subscription.url || '',
+      category: subscription.category || '',
+      notifications: true,
+      iconImage: subscription.iconImage || ''
+    });
+    setCurrentScreen('add');
   };
 
   // 12. 구독 수정 함수
