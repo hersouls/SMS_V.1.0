@@ -199,9 +199,47 @@ const SubscriptionApp = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // 4.5. Supabase 연결 테스트
+  const testSupabaseConnection = async () => {
+    try {
+      console.log('Supabase 연결 테스트 시작...');
+      
+      // 사용자 인증 상태 확인
+      if (!user) {
+        console.error('사용자가 로그인되어 있지 않습니다.');
+        return false;
+      }
+
+      // 간단한 쿼리로 연결 테스트
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .select('id')
+        .limit(1);
+        
+      if (error) {
+        console.error('Supabase 연결 테스트 실패:', error.message, error);
+        return false;
+      }
+      
+      console.log('Supabase 연결 테스트 성공:', data);
+      return true;
+    } catch (error) {
+      console.error('Supabase 연결 예외:', error);
+      return false;
+    }
+  };
+
   // 5. 사용자 전체 데이터 불러오기
   const loadUserData = async () => {
     if (!user) return;
+    
+    // 먼저 Supabase 연결을 테스트
+    const isConnected = await testSupabaseConnection();
+    if (!isConnected) {
+      console.error('Supabase 연결 실패로 인해 데이터 로딩을 중단합니다.');
+      return;
+    }
+    
     try {
       await Promise.all([
         loadUserSubscriptions(),
@@ -514,8 +552,39 @@ const SubscriptionApp = () => {
   const handleAddSubscription = async () => {
     if (!customService.name || !customService.price || !user || isAddingSubscription) return;
     
+    console.log('구독 추가 시작:', { 
+      user: user?.id, 
+      service: customService.name,
+      price: customService.price,
+      renewalDate: customService.renewalDate,
+      supabase: !!supabase
+    });
     setIsAddingSubscription(true);
+    
     try {
+      // 필수 필드 검증
+      if (!customService.renewalDate) {
+        alert('구독 갱신일을 선택해주세요.');
+        setIsAddingSubscription(false);
+        return;
+      }
+
+      console.log('Supabase에 구독 데이터 삽입 중...', {
+        user_id: user.id,
+        name: customService.name,
+        price: parseFloat(customService.price),
+        currency: customService.currency,
+        renew_date: customService.renewalDate
+      });
+
+      // Supabase 연결 테스트
+      const connectionTest = await testSupabaseConnection();
+      if (!connectionTest) {
+        alert('데이터베이스에 연결할 수 없습니다. 네트워크 연결을 확인해주세요.');
+        setIsAddingSubscription(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('subscriptions')
         .insert({
@@ -552,14 +621,19 @@ const SubscriptionApp = () => {
         .single();
 
       if (error) {
-        console.error('Error adding subscription:', error);
-        await addNotification('error', '구독 추가 실패', '구독 추가 중 오류가 발생했습니다.');
+        console.error('Supabase 구독 추가 오류:', error);
+        alert(`구독 추가 실패: ${error.message || '알 수 없는 오류가 발생했습니다.'}`);
+        try {
+          await addNotification('error', '구독 추가 실패', `구독 추가 중 오류가 발생했습니다: ${error.message}`);
+        } catch (notificationError) {
+          console.error('알림 추가 오류:', notificationError);
+        }
         setIsAddingSubscription(false);
-        setCurrentScreen('main');
-        resetForm();
-        return;
+        return; // 오류 시 메인 화면으로 돌아가지 않음
       }
 
+      console.log('구독 추가 성공:', data);
+      
       const localSubscription: Subscription = {
         id: Date.now(),
         databaseId: data.id,
@@ -583,26 +657,33 @@ const SubscriptionApp = () => {
       try {
         await addNotification('success', '구독 추가 완료', `${customService.name} 구독이 성공적으로 추가되었습니다.`);
       } catch (notificationError) {
-        console.error('Error adding notification:', notificationError);
+        console.error('알림 추가 오류:', notificationError);
       }
       
       try {
         await addAlarmHistory('subscription_added', '구독이 추가되었습니다', customService.name, data.id);
       } catch (alarmError) {
-        console.error('Error adding alarm history:', alarmError);
+        console.error('알람 히스토리 추가 오류:', alarmError);
       }
+
+      // 성공시에만 메인 화면으로 이동
+      setCurrentScreen('main');
+      resetForm();
+      
     } catch (error) {
-      console.error('Error adding subscription:', error);
+      console.error('구독 추가 중 예외 발생:', error);
       const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
+      alert(`구독 추가 실패: ${errorMessage}`);
+      
       try {
         await addNotification('error', '구독 추가 실패', `구독 추가 중 오류가 발생했습니다: ${errorMessage}`);
       } catch (notificationError) {
-        console.error('Error adding error notification:', notificationError);
+        console.error('알림 추가 오류:', notificationError);
       }
+      
+      // 오류 시에는 메인 화면으로 돌아가지 않음
     } finally {
       setIsAddingSubscription(false);
-      setCurrentScreen('main');
-      resetForm();
     }
   };
 
@@ -761,7 +842,7 @@ const SubscriptionApp = () => {
   };
 
   // 18. 카테고리 목록
-  const categories = ['엔터테인먼트', '음악', '생산성', '쇼핑', '개발', 'AI서비스'];
+  const categories = ['전체', '엔터테인먼트', '음악', '생산성', '쇼핑', '개발', 'AI서비스'];
 
   const resetForm = () => {
     setCustomService({
@@ -2446,7 +2527,7 @@ const SubscriptionApp = () => {
         ) : (
           <button
             onClick={handleAddSubscription}
-            disabled={!customService.name || !customService.price || isAddingSubscription}
+            disabled={!customService.name || !customService.price || !customService.renewalDate || isAddingSubscription}
             className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white py-4 rounded-2xl font-semibold transition-all duration-200 shadow-sm hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-400 flex items-center justify-center"
           >
             {isAddingSubscription ? (
@@ -2461,6 +2542,35 @@ const SubscriptionApp = () => {
               '구독 추가하기'
             )}
           </button>
+          
+          {/* 필수 필드 안내 */}
+          {(!customService.name || !customService.price || !customService.renewalDate) && (
+            <div className="mt-2 text-center">
+              <p className="text-sm text-red-500">
+                필수 입력 사항: 
+                {!customService.name && ' 서비스 이름'}
+                {(!customService.name && (!customService.price || !customService.renewalDate)) && ','}
+                {!customService.price && ' 월 구독료'}
+                {(!customService.price && !customService.renewalDate) && ','}
+                {!customService.renewalDate && ' 구독 갱신일'}
+              </p>
+            </div>
+          )}
+          
+          {/* 로딩 중 오버레이 */}
+          {isAddingSubscription && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-2xl p-6 shadow-lg">
+                <div className="flex items-center space-x-3">
+                  <svg className="animate-spin h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span className="text-gray-700 font-medium">구독을 추가하고 있습니다...</span>
+                </div>
+              </div>
+            </div>
+          )}
         )}
       </div>
     </div>
