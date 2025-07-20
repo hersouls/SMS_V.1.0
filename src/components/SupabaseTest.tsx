@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useSupabase } from '../contexts/SupabaseContext';
 
 export const SupabaseTest: React.FC = () => {
@@ -65,7 +65,7 @@ export const SupabaseTest: React.FC = () => {
       }
 
       // 7. 실시간 구독 테스트
-      const channel = supabase
+      supabase
         .channel('test')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'subscriptions' }, (payload) => {
           addTestResult(`✅ 실시간 구독 테스트 성공: ${payload.eventType} 이벤트`);
@@ -92,7 +92,7 @@ export const SupabaseTest: React.FC = () => {
       const tables = ['profiles', 'subscriptions', 'custom_services', 'notifications', 'alarm_history', 'exchange_rates'];
       
       for (const table of tables) {
-        const { data, error } = await supabase
+        const { error } = await supabase
           .from(table)
           .select('*')
           .limit(1);

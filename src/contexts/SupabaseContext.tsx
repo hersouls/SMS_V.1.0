@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import type { User, Session } from '@supabase/supabase-js';
 import type { Profile } from '../lib/supabase';
@@ -35,6 +35,31 @@ export const SupabaseProvider: React.FC<SupabaseProviderProps> = ({ children }) 
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const fetchProfile = useCallback(async (userId: string, sessionUser?: User) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        // 프로필이 존재하지 않는 경우 (PGRST116 에러)
+        if (error.code === 'PGRST116') {
+          console.log('Profile not found, creating new profile...');
+          await createProfile(userId, sessionUser);
+          return;
+        }
+        console.error('Error fetching profile:', error);
+        return;
+      }
+
+      setProfile(data);
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    }
+  }, []);
 
   useEffect(() => {
     // Get initial session with timeout
@@ -83,32 +108,7 @@ export const SupabaseProvider: React.FC<SupabaseProviderProps> = ({ children }) 
       clearTimeout(timeoutId);
       subscription.unsubscribe();
     };
-  }, []);
-
-  const fetchProfile = async (userId: string, sessionUser?: User) => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (error) {
-        // 프로필이 존재하지 않는 경우 (PGRST116 에러)
-        if (error.code === 'PGRST116') {
-          console.log('Profile not found, creating new profile...');
-          await createProfile(userId, sessionUser);
-          return;
-        }
-        console.error('Error fetching profile:', error);
-        return;
-      }
-
-      setProfile(data);
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-    }
-  };
+  }, [fetchProfile]);
 
   const createProfile = async (userId: string, sessionUser?: User) => {
     try {
