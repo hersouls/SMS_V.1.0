@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { supabase } from '../lib/supabase';
 import type { User, Session } from '@supabase/supabase-js';
 import type { Profile } from '../lib/supabase';
+import { splitFullName } from '../lib/utils';
 
 interface SupabaseContextType {
   user: User | null;
@@ -36,6 +37,67 @@ export const SupabaseProvider: React.FC<SupabaseProviderProps> = ({ children }) 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const createProfile = useCallback(async (userId: string, sessionUser?: User) => {
+    try {
+      const currentUser = sessionUser || user;
+      if (!currentUser) {
+        console.error('No user information available for profile creation');
+        return;
+      }
+
+      const userEmail = currentUser.email || '';
+      const userName = currentUser.user_metadata?.full_name || currentUser.user_metadata?.name || '';
+      const photoUrl = currentUser.user_metadata?.avatar_url || currentUser.user_metadata?.picture || '';
+      
+      // Google 로그인의 경우 이름을 first_name과 last_name으로 분리
+      const { firstName, lastName } = splitFullName(userName);
+
+      console.log('Creating profile with data:', {
+        id: userId,
+        email: userEmail,
+        first_name: firstName,
+        last_name: lastName,
+        photo_url: photoUrl,
+      });
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .insert({
+          id: userId,
+          email: userEmail,
+          first_name: firstName,
+          last_name: lastName,
+          photo_url: photoUrl,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating profile:', error);
+        // 이미 존재하는 경우 다시 조회
+        if (error.code === '23505') { // unique violation
+          console.log('Profile already exists, fetching...');
+          const { data: existingData } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', userId)
+            .single();
+          if (existingData) {
+            setProfile(existingData);
+          }
+        }
+        return;
+      }
+
+      console.log('Profile created successfully:', data);
+      setProfile(data);
+    } catch (error) {
+      console.error('Error creating profile:', error);
+    }
+  }, [user]);
+
   const fetchProfile = useCallback(async (userId: string, sessionUser?: User) => {
     try {
       const { data, error } = await supabase
@@ -51,7 +113,7 @@ export const SupabaseProvider: React.FC<SupabaseProviderProps> = ({ children }) 
           await createProfile(userId, sessionUser);
           return;
         }
-        console.error('Error fetching profile:', error);
+        console.error('Error fetching profile:', error.message || error);
         return;
       }
 
@@ -59,7 +121,7 @@ export const SupabaseProvider: React.FC<SupabaseProviderProps> = ({ children }) 
     } catch (error) {
       console.error('Error fetching profile:', error);
     }
-  }, []);
+  }, [createProfile]);
 
   useEffect(() => {
     // Get initial session with timeout
@@ -109,69 +171,6 @@ export const SupabaseProvider: React.FC<SupabaseProviderProps> = ({ children }) 
       subscription.unsubscribe();
     };
   }, [fetchProfile]);
-
-  const createProfile = async (userId: string, sessionUser?: User) => {
-    try {
-      const currentUser = sessionUser || user;
-      if (!currentUser) {
-        console.error('No user information available for profile creation');
-        return;
-      }
-
-      const userEmail = currentUser.email || '';
-      const userName = currentUser.user_metadata?.full_name || currentUser.user_metadata?.name || '';
-      const photoUrl = currentUser.user_metadata?.avatar_url || currentUser.user_metadata?.picture || '';
-      
-      // Google 로그인의 경우 이름을 first_name과 last_name으로 분리
-      const nameParts = userName.split(' ');
-      const firstName = nameParts[0] || '';
-      const lastName = nameParts.slice(1).join(' ') || '';
-
-      console.log('Creating profile with data:', {
-        id: userId,
-        email: userEmail,
-        first_name: firstName,
-        last_name: lastName,
-        photo_url: photoUrl,
-      });
-
-      const { data, error } = await supabase
-        .from('profiles')
-        .insert({
-          id: userId,
-          email: userEmail,
-          first_name: firstName,
-          last_name: lastName,
-          photo_url: photoUrl,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error creating profile:', error);
-        // 이미 존재하는 경우 다시 조회
-        if (error.code === '23505') { // unique violation
-          console.log('Profile already exists, fetching...');
-          const { data: existingData } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', userId)
-            .single();
-          if (existingData) {
-            setProfile(existingData);
-          }
-        }
-        return;
-      }
-
-      console.log('Profile created successfully:', data);
-      setProfile(data);
-    } catch (error) {
-      console.error('Error creating profile:', error);
-    }
-  };
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({

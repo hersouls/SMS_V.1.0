@@ -4,15 +4,18 @@ import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 import { SupabaseProvider } from './contexts/SupabaseContext';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
 );
 root.render(
   <React.StrictMode>
-    <SupabaseProvider>
-      <App />
-    </SupabaseProvider>
+    <ErrorBoundary>
+      <SupabaseProvider>
+        <App />
+      </SupabaseProvider>
+    </ErrorBoundary>
   </React.StrictMode>
 );
 
