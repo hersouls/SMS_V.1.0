@@ -135,13 +135,21 @@ const SubscriptionApp = () => {
     console.log('customService:', customService);
     console.log('user:', user);
     
-    if (!customService.name || !customService.price || !user) {
+    // 유효성 검사
+    if (!customService.name?.trim() || !customService.price?.trim() || !user) {
       console.log('Validation failed:', { 
         name: customService.name, 
         price: customService.price, 
         user: !!user 
       });
-      await addNotification('warning', '입력 확인', '서비스명과 가격을 입력해주세요.');
+      await addNotification('warning', '입력 확인', '모든 필수 정보를 입력해주세요.');
+      return;
+    }
+
+    // 가격 유효성 검사
+    const priceValue = parseFloat(customService.price);
+    if (isNaN(priceValue) || priceValue <= 0) {
+      await addNotification('warning', '입력 확인', '올바른 가격을 입력해주세요.');
       return;
     }
     
@@ -155,7 +163,10 @@ const SubscriptionApp = () => {
       // payment_date는 숫자 타입이므로 빈 문자열인 경우 null로 처리
       let paymentDate = null;
       if (customService.paymentDate && customService.paymentDate.trim() !== '') {
-        paymentDate = parseInt(customService.paymentDate);
+        const parsedDate = parseInt(customService.paymentDate);
+        if (!isNaN(parsedDate) && parsedDate >= 1 && parsedDate <= 31) {
+          paymentDate = parsedDate;
+        }
       } else if (renewDate) {
         // renewalDate가 있는 경우 해당 날짜의 일자를 사용
         paymentDate = new Date(renewDate).getDate();
@@ -163,10 +174,10 @@ const SubscriptionApp = () => {
 
       const insertData = {
         user_id: user.id,
-        name: customService.name,
+        name: customService.name.trim(),
         icon: '📱',
         icon_image_url: customService.iconImage || null,
-        price: parseFloat(customService.price),
+        price: priceValue,
         currency: customService.currency,
         renew_date: renewDate,
         start_date: startDate,
@@ -180,6 +191,12 @@ const SubscriptionApp = () => {
       
       console.log('Inserting data:', insertData);
 
+      // 네트워크 연결 상태 확인
+      if (!navigator.onLine) {
+        await addNotification('error', '네트워크 오류', '인터넷 연결을 확인해주세요.');
+        return;
+      }
+
       const { data, error } = await supabase
         .from('subscriptions')
         .insert(insertData)
@@ -190,7 +207,26 @@ const SubscriptionApp = () => {
 
       if (error) {
         console.error('Error adding subscription:', error);
-        await addNotification('error', '구독 추가 실패', '구독 추가 중 오류가 발생했습니다.');
+        
+        // 에러 타입에 따른 구체적인 메시지
+        let errorMessage = '구독 추가 중 오류가 발생했습니다.';
+        if (error.code === 'PGRST301') {
+          errorMessage = '중복된 구독이 있습니다.';
+        } else if (error.code === '23505') {
+          errorMessage = '이미 동일한 구독이 존재합니다.';
+        } else if (error.message?.includes('JWT')) {
+          errorMessage = '로그인이 만료되었습니다. 다시 로그인해주세요.';
+        } else if (error.message?.includes('network')) {
+          errorMessage = '네트워크 연결을 확인해주세요.';
+        }
+        
+        await addNotification('error', '구독 추가 실패', errorMessage);
+        return;
+      }
+
+      if (!data) {
+        console.error('No data returned from insert');
+        await addNotification('error', '구독 추가 실패', '데이터 저장에 실패했습니다.');
         return;
       }
 
@@ -219,7 +255,17 @@ const SubscriptionApp = () => {
       resetForm();
     } catch (error) {
       console.error('Unexpected error adding subscription:', error);
-      await addNotification('error', '구독 추가 실패', '구독 추가 중 오류가 발생했습니다.');
+      
+      let errorMessage = '구독 추가 중 예상치 못한 오류가 발생했습니다.';
+      if (error instanceof Error) {
+        if (error.message?.includes('fetch')) {
+          errorMessage = '네트워크 연결을 확인해주세요.';
+        } else if (error.message?.includes('JSON')) {
+          errorMessage = '서버 응답에 문제가 있습니다.';
+        }
+      }
+      
+      await addNotification('error', '구독 추가 실패', errorMessage);
     }
   };
 
@@ -413,8 +459,11 @@ const SubscriptionApp = () => {
   }, [fetchExchangeRate]);
 
   // 15. 로그인되지 않은 경우 로그인 화면 표시
-  if (!isLoggedIn || authLoading) {
-    return <LoginScreen onLoginSuccess={() => {}} />;
+  if ((!user && !authLoading) || authLoading) {
+    return <LoginScreen onLoginSuccess={() => {
+      console.log('Login success callback called');
+      setIsLoggedIn(true);
+    }} />;
   }
 
   // 16. 메인 UI 렌더링
@@ -691,18 +740,120 @@ const SubscriptionApp = () => {
                 </div>
               </div>
 
+              {/* 디버그 정보 */}
+              <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-4">
+                <h4 className="text-sm font-medium text-yellow-800 mb-2">디버그 정보</h4>
+                <div className="text-xs text-yellow-700 space-y-1">
+                  <div>로그인 상태: {user ? `✅ ${user.email} (ID: ${user.id})` : '❌ 로그인 안됨'}</div>
+                  <div>인증 로딩: {authLoading ? '✅ 로딩중' : '❌ 완료'}</div>
+                  <div>isLoggedIn: {isLoggedIn ? '✅ true' : '❌ false'}</div>
+                  <div>서비스명: {customService.name || '입력 안됨'} (길이: {customService.name?.length || 0})</div>
+                  <div>가격: {customService.price || '입력 안됨'} (길이: {customService.price?.length || 0})</div>
+                  <div>가격 숫자: {customService.price ? (isNaN(parseFloat(customService.price)) ? '❌ 숫자 아님' : `✅ ${parseFloat(customService.price)}`) : '입력 안됨'}</div>
+                  <div>버튼 활성화 조건:</div>
+                  <div className="ml-2">
+                    - 서비스명: {customService.name?.trim() ? '✅' : '❌'}<br/>
+                    - 가격: {customService.price?.trim() ? '✅' : '❌'}<br/>
+                    - 사용자: {user ? '✅' : '❌'}<br/>
+                    - 최종: {(!customService.name?.trim() || !customService.price?.trim() || !user) ? '❌ 비활성화' : '✅ 활성화'}
+                  </div>
+                  <div className="flex gap-2 mt-2">
+                    <button
+                      onClick={async () => {
+                        try {
+                          console.log('Supabase 연결 테스트 시작...');
+                          const { data, error } = await supabase
+                            .from('subscriptions')
+                            .select('count')
+                            .limit(1);
+                          
+                          if (error) {
+                            console.error('Supabase 연결 실패:', error);
+                            await addNotification('error', '연결 테스트', `Supabase 연결 실패: ${error.message}`);
+                          } else {
+                            console.log('Supabase 연결 성공:', data);
+                            await addNotification('success', '연결 테스트', 'Supabase 연결 성공!');
+                          }
+                        } catch (error) {
+                          console.error('연결 테스트 오류:', error);
+                          await addNotification('error', '연결 테스트', `테스트 오류: ${error}`);
+                        }
+                      }}
+                      className="px-3 py-1 bg-yellow-200 hover:bg-yellow-300 text-yellow-800 text-xs rounded-lg"
+                    >
+                      Supabase 연결 테스트
+                    </button>
+                    <button
+                      onClick={async () => {
+                        try {
+                          const { data: { user: currentUser } } = await supabase.auth.getUser();
+                          console.log('현재 사용자:', currentUser);
+                          await addNotification('info', '사용자 정보', `현재 사용자: ${currentUser?.email || '없음'}`);
+                        } catch (error) {
+                          console.error('사용자 조회 오류:', error);
+                        }
+                      }}
+                      className="px-3 py-1 bg-blue-200 hover:bg-blue-300 text-blue-800 text-xs rounded-lg"
+                    >
+                      사용자 재확인
+                    </button>
+                  </div>
+                </div>
+              </div>
+
                              {/* 저장 버튼 */}
                <button
-                 onClick={() => {
+                 onClick={async (e) => {
+                   e.preventDefault();
                    console.log('구독 추가하기 버튼 클릭됨');
                    console.log('버튼 disabled 상태:', !customService.name || !customService.price);
-                   console.log('form data:', { name: customService.name, price: customService.price });
-                   handleAddSubscription();
+                   console.log('사용자 로그인 상태:', !!user);
+                   console.log('form data:', { 
+                     name: customService.name, 
+                     price: customService.price,
+                     user: user?.id 
+                   });
+                   
+                   // 입력 필드 유효성 검사
+                   if (!customService.name?.trim()) {
+                     await addNotification('warning', '입력 확인', '서비스명을 입력해주세요.');
+                     return;
+                   }
+                   if (!customService.price?.trim()) {
+                     await addNotification('warning', '입력 확인', '가격을 입력해주세요.');
+                     return;
+                   }
+                   if (!user) {
+                     await addNotification('error', '로그인 필요', '로그인이 필요한 서비스입니다.');
+                     return;
+                   }
+                   
+                   // Supabase 연결 상태 확인
+                   try {
+                     const { data: connectionTest, error: connectionError } = await supabase
+                       .from('subscriptions')
+                       .select('count')
+                       .limit(1);
+                     
+                     if (connectionError) {
+                       console.error('Supabase 연결 테스트 실패:', connectionError);
+                       await addNotification('error', '연결 오류', 'Supabase 연결에 문제가 있습니다.');
+                       return;
+                     }
+                     
+                     console.log('Supabase 연결 테스트 성공');
+                   } catch (error) {
+                     console.error('Supabase 연결 테스트 중 오류:', error);
+                     await addNotification('error', '연결 오류', 'Supabase 연결에 문제가 있습니다.');
+                     return;
+                   }
+                   
+                   await handleAddSubscription();
                  }}
-                 disabled={!customService.name || !customService.price}
+                 disabled={!customService.name?.trim() || !customService.price?.trim() || !user}
                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white py-4 rounded-2xl font-semibold transition-all duration-200 shadow-sm hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
                >
-                 구독 추가하기
+                 {!user ? '로그인이 필요합니다' : '구독 추가하기'}
                </button>
             </div>
           </div>
