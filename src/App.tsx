@@ -2541,22 +2541,23 @@ const SubscriptionApp = () => {
             ) : (
               '구독 추가하기'
             )}
-          </button>
-          
+          </button>        
           {/* 필수 필드 안내 */}
           {(!customService.name || !customService.price || !customService.renewalDate) && (
             <div className="mt-2 text-center">
               <p className="text-sm text-red-500">
-                필수 입력 사항: 
-                {!customService.name && ' 서비스 이름'}
-                {(!customService.name && (!customService.price || !customService.renewalDate)) && ','}
-                {!customService.price && ' 월 구독료'}
-                {(!customService.price && !customService.renewalDate) && ','}
-                {!customService.renewalDate && ' 구독 갱신일'}
+                필수 입력 사항: {
+                  [
+                    !customService.name && '서비스 이름',
+                    !customService.price && '월 구독료',
+                    !customService.renewalDate && '구독 갱신일'
+                  ]
+                  .filter(Boolean)
+                  .join(', ')
+                }
               </p>
             </div>
           )}
-          
           {/* 로딩 중 오버레이 */}
           {isAddingSubscription && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
