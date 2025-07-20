@@ -70,6 +70,21 @@ const SubscriptionApp = () => {
     email: ''
   });
 
+  // 구독 추가 폼 상태
+  const [customService, setCustomService] = useState({
+    name: '',
+    price: '',
+    currency: 'KRW' as 'KRW' | 'USD' | 'EUR' | 'JPY',
+    renewalDate: '',
+    startDate: '',
+    paymentDate: '',
+    paymentCard: '',
+    url: '',
+    category: '',
+    notifications: true,
+    iconImage: ''
+  });
+
   // 알림 추가 함수
   const addNotification = useCallback(async (type: Notification['type'], title: string, message: string) => {
     const newNotification: Notification = {
@@ -102,6 +117,85 @@ const SubscriptionApp = () => {
     
     setTimeout(() => setShowNotification(false), 5000);
   }, [user, supabase]);
+
+  // 구독 추가 함수
+  const handleAddSubscription = async () => {
+    if (!customService.name || !customService.price || !user) {
+      await addNotification('warning', '입력 확인', '서비스명과 가격을 입력해주세요.');
+      return;
+    }
+    
+    try {
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .insert({
+          user_id: user.id,
+          name: customService.name,
+          icon: '📱',
+          icon_image_url: customService.iconImage,
+          price: parseFloat(customService.price),
+          currency: customService.currency,
+          renew_date: customService.renewalDate,
+          start_date: customService.startDate || new Date().toISOString().split('T')[0],
+          payment_date: parseInt(customService.paymentDate) || new Date(customService.renewalDate).getDate(),
+          payment_card: customService.paymentCard,
+          url: customService.url,
+          color: '#6C63FF',
+          category: customService.category,
+          is_active: true
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error adding subscription:', error);
+        await addNotification('error', '구독 추가 실패', '구독 추가 중 오류가 발생했습니다.');
+        return;
+      }
+
+      const localSubscription: Subscription = {
+        id: Date.now(),
+        databaseId: data.id,
+        name: data.name,
+        icon: data.icon || '📱',
+        iconImage: data.icon_image_url,
+        price: data.price,
+        currency: data.currency as 'KRW' | 'USD' | 'EUR' | 'JPY',
+        renewDate: data.renew_date,
+        startDate: data.start_date || '',
+        paymentDate: data.payment_date?.toString() || '',
+        paymentCard: data.payment_card || '',
+        url: data.url || '',
+        color: data.color || '#6C63FF',
+        category: data.category || ''
+      };
+
+      setSubscriptions(prev => [localSubscription, ...prev]);
+      await addNotification('success', '구독 추가 완료', `${customService.name} 구독이 성공적으로 추가되었습니다.`);
+      setCurrentScreen('main');
+      resetForm();
+    } catch (error) {
+      console.error('Error adding subscription:', error);
+      await addNotification('error', '구독 추가 실패', '구독 추가 중 오류가 발생했습니다.');
+    }
+  };
+
+  // 폼 리셋 함수
+  const resetForm = () => {
+    setCustomService({
+      name: '',
+      price: '',
+      currency: 'KRW',
+      renewalDate: '',
+      startDate: '',
+      paymentDate: '',
+      paymentCard: '',
+      url: '',
+      category: '',
+      notifications: true,
+      iconImage: ''
+    });
+  };
 
   // Supabase 구독 데이터 로딩
   const loadUserSubscriptions = useCallback(async () => {
@@ -455,8 +549,124 @@ const SubscriptionApp = () => {
 
         {currentScreen === 'supabase-test' && <SupabaseTest />}
 
+        {/* 구독 추가/수정 화면 */}
+        {currentScreen === 'add' && (
+          <div className="min-h-screen bg-gradient-to-b from-blue-900 via-blue-800 to-blue-700" style={{ fontFamily: "'Nanum Gothic', sans-serif" }}>
+            <link
+              href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&display=swap"
+              rel="stylesheet"
+            />
+            
+            {/* 헤더 영역 */}
+            <div className="flex items-center justify-between px-4 py-4">
+              <button
+                onClick={() => setCurrentScreen('main')}
+                className="flex items-center text-white/80 hover:text-white transition-colors duration-200"
+              >
+                <ChevronLeft className="w-6 h-6 mr-1" />
+                뒤로
+              </button>
+              <h1 className="text-white text-lg font-semibold">구독 추가</h1>
+              <div className="w-8" />
+            </div>
+            
+            {/* 메인 콘텐츠 */}
+            <div className="bg-gray-50 rounded-t-3xl px-4 pt-6 pb-24 min-h-[75vh] -mt-4 relative z-10">
+              {/* 구독 정보 입력 폼 */}
+              <div className="bg-white rounded-2xl p-6 shadow-md mb-6">
+                <h3 className="text-lg font-bold text-gray-900 mb-4">구독 정보</h3>
+                
+                <div className="space-y-4">
+                                     {/* 서비스명 */}
+                   <div>
+                     <label className="block text-sm font-medium text-gray-700 mb-2">
+                       서비스명
+                     </label>
+                     <input
+                       type="text"
+                       value={customService.name}
+                       onChange={(e) => setCustomService(prev => ({ ...prev, name: e.target.value }))}
+                       placeholder="Netflix, Spotify 등"
+                       className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200"
+                     />
+                   </div>
+
+                   {/* 가격 및 화폐 */}
+                   <div className="grid grid-cols-3 gap-3">
+                     <div className="col-span-2">
+                       <label className="block text-sm font-medium text-gray-700 mb-2">
+                         월 이용료
+                       </label>
+                       <input
+                         type="number"
+                         value={customService.price}
+                         onChange={(e) => setCustomService(prev => ({ ...prev, price: e.target.value }))}
+                         placeholder="0"
+                         className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200"
+                       />
+                     </div>
+                     <div>
+                       <label className="block text-sm font-medium text-gray-700 mb-2">
+                         화폐
+                       </label>
+                       <select 
+                         value={customService.currency}
+                         onChange={(e) => setCustomService(prev => ({ ...prev, currency: e.target.value as 'KRW' | 'USD' | 'EUR' | 'JPY' }))}
+                         className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200"
+                       >
+                         <option value="KRW">KRW</option>
+                         <option value="USD">USD</option>
+                         <option value="EUR">EUR</option>
+                         <option value="JPY">JPY</option>
+                       </select>
+                     </div>
+                   </div>
+
+                   {/* 결제일 */}
+                   <div>
+                     <label className="block text-sm font-medium text-gray-700 mb-2">
+                       매월 결제일
+                     </label>
+                     <input
+                       type="number"
+                       min="1"
+                       max="31"
+                       value={customService.paymentDate}
+                       onChange={(e) => setCustomService(prev => ({ ...prev, paymentDate: e.target.value }))}
+                       placeholder="매월 몇 일에 결제되나요?"
+                       className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200"
+                     />
+                   </div>
+
+                   {/* 다음 결제일 */}
+                   <div>
+                     <label className="block text-sm font-medium text-gray-700 mb-2">
+                       다음 결제일
+                     </label>
+                     <input
+                       type="date"
+                       value={customService.renewalDate}
+                       onChange={(e) => setCustomService(prev => ({ ...prev, renewalDate: e.target.value }))}
+                       className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200"
+                     />
+                   </div>
+                </div>
+              </div>
+
+                             {/* 저장 버튼 */}
+               <button
+                 onClick={handleAddSubscription}
+                 disabled={!customService.name || !customService.price}
+                 className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white py-4 rounded-2xl font-semibold transition-all duration-200 shadow-sm hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+               >
+                 구독 추가하기
+               </button>
+            </div>
+          </div>
+        )}
+
         {/* 다른 화면들은 필요에 따라 추가 */}
-        {currentScreen !== 'main' && currentScreen !== 'supabase-test' && (
+        {currentScreen !== 'main' && currentScreen !== 'supabase-test' && currentScreen !== 'add' && (
           <div className="px-4 py-6 sm:px-0">
             <div className="text-center py-12">
               <div className="text-gray-400 text-lg mb-4">
