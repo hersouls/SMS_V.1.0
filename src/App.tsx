@@ -2520,13 +2520,11 @@ const SubscriptionApp = () => {
             {(!customService.name || !customService.price || !customService.renewalDate) && (
               <div className="mt-2 text-center">
                 <p className="text-sm text-red-500">
-                  필수 입력 사항: {
-                    [
+                  필수 입력 사항: {[
                       !customService.name && '서비스 이름',
                       !customService.price && '월 구독료',
                       !customService.renewalDate && '구독 갱신일'
-                    ].filter(Boolean).join(', ')
-                  }
+                    ].filter(Boolean).join(', ')}
                 </p>
               </div>
             )}
