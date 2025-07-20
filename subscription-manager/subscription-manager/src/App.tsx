@@ -310,12 +310,12 @@ const SubscriptionApp = () => {
       currency: subscription.currency,
       renewalDate: subscription.renewDate,
       startDate: subscription.startDate,
-      paymentDate: subscription.paymentDate,
-      paymentCard: subscription.paymentCard,
-      url: subscription.url,
-      category: subscription.category,
+      paymentDate: subscription.paymentDate ?? '',
+      paymentCard: subscription.paymentCard ?? '',
+      url: subscription.url ?? '',
+      category: subscription.category ?? '',
       notifications: true,
-      iconImage: subscription.iconImage || ''
+      iconImage: subscription.iconImage ?? ''
     });
     setCurrentScreen('add');
   };
@@ -331,11 +331,11 @@ const SubscriptionApp = () => {
             price: parseFloat(customService.price),
             renewDate: customService.renewalDate,
             startDate: customService.startDate,
-            paymentDate: customService.paymentDate,
-            paymentCard: customService.paymentCard,
-            url: customService.url,
-            category: customService.category,
-            iconImage: customService.iconImage
+            paymentDate: customService.paymentDate || '',
+            paymentCard: customService.paymentCard || '',
+            url: customService.url || '',
+            category: customService.category || '',
+            iconImage: customService.iconImage || ''
           }
         : sub
     ));
@@ -565,7 +565,7 @@ const SubscriptionApp = () => {
     
     subscriptions.forEach(subscription => {
       // 매월 결제일 계산
-      const paymentDay = parseInt(subscription.paymentDate);
+      const paymentDay = parseInt(subscription.paymentDate ?? '1');
       const renewDate = new Date(subscription.renewDate);
       const currentYear = new Date().getFullYear();
       const currentMonth = new Date().getMonth();
@@ -835,7 +835,7 @@ const SubscriptionApp = () => {
                       </h3>
                       <p className="text-sm text-gray-500 flex items-center gap-1">
                         <Calendar className="w-4 h-4" />
-                        매월 결제일: {subscription.paymentDate}일
+                        매월 결제일: {subscription.paymentDate ?? '미설정'}일
                       </p>
                     </div>
                   </div>
@@ -1101,7 +1101,7 @@ const SubscriptionApp = () => {
                       <h3 className="text-lg font-bold text-gray-900 mb-1">
                         {subscription.name}
                       </h3>
-                      <p className="text-sm text-gray-500 mb-1">{subscription.category}</p>
+                      <p className="text-sm text-gray-500 mb-1">{subscription.category ?? ''}</p>
                       <p className="text-sm text-gray-500 flex items-center gap-1">
                         <Calendar className="w-4 h-4" />
                         갱신일: {formatDate(subscription.renewDate)}
@@ -1194,7 +1194,7 @@ const SubscriptionApp = () => {
                 <h2 className="text-2xl font-bold text-gray-900 mb-1">
                   {selectedSubscription.name}
                 </h2>
-                <p className="text-gray-500">{selectedSubscription.category}</p>
+                <p className="text-gray-500">{selectedSubscription.category ?? ''}</p>
               </div>
         </div>
 
@@ -1255,7 +1255,7 @@ const SubscriptionApp = () => {
                   <span className="text-gray-700 font-medium">카테고리</span>
                 </div>
                 <span className="text-gray-900 font-medium">
-                  {selectedSubscription.category}
+                  {selectedSubscription.category ?? ''}
                 </span>
               </div>
 
