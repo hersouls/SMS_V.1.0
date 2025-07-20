@@ -8,7 +8,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { useSupabase } from './contexts/SupabaseContext';
 import { LoginScreen } from './components/LoginScreen';
-import { SupabaseTest } from './components/SupabaseTest';
+
 import { 
   formatCurrency, 
   formatDate, 
@@ -61,7 +61,7 @@ const SubscriptionApp = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showNotification, setShowNotification] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [currentScreen, setCurrentScreen] = useState<'main' | 'add' | 'manage' | 'detail' | 'notifications' | 'alarm-history' | 'profile' | 'supabase-test'>('main');
+  const [currentScreen, setCurrentScreen] = useState<'main' | 'add' | 'manage' | 'detail' | 'notifications' | 'alarm-history' | 'profile'>('main');
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [profile, setProfile] = useState<Profile>({
     username: '',
@@ -468,12 +468,7 @@ const SubscriptionApp = () => {
               >
                 <User className="h-6 w-6" />
               </button>
-              <button
-                                  onClick={() => setCurrentScreen('supabase-test')}
-                  className="p-2 rounded-md text-gray-400 hover:text-gray-500"
-                >
-                  <Settings className="h-6 w-6" />
-                </button>
+
               <button
                 onClick={signOut}
                 className="text-sm text-gray-500 hover:text-gray-700"
@@ -560,7 +555,7 @@ const SubscriptionApp = () => {
           </div>
         )}
 
-        {currentScreen === 'supabase-test' && <SupabaseTest />}
+
 
         {/* 구독 추가/수정 화면 */}
         {currentScreen === 'add' && (
@@ -679,7 +674,7 @@ const SubscriptionApp = () => {
         )}
 
         {/* 다른 화면들은 필요에 따라 추가 */}
-        {currentScreen !== 'main' && currentScreen !== 'supabase-test' && currentScreen !== 'add' && (
+        {currentScreen !== 'main' && currentScreen !== 'add' && (
           <div className="px-4 py-6 sm:px-0">
             <div className="text-center py-12">
               <div className="text-gray-400 text-lg mb-4">
