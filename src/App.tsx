@@ -201,7 +201,7 @@ const SubscriptionApp = () => {
         currency: sub.currency,
         renewDate: sub.renew_date,
         startDate: sub.start_date,
-        paymentDate: sub.payment_date?.toString(),
+        paymentDate: sub.payment_date?.toString()  || '',
         paymentCard: sub.payment_card,
         url: sub.url,
         color: sub.color,
