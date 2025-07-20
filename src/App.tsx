@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Search, Check, Calendar, DollarSign, Tag, Bell, User, Home, Menu, Plus, Edit2, Trash2, Upload, Image,
   Settings, ChevronLeft, ChevronRight, CreditCard, Globe, Banknote, CalendarRange
@@ -11,8 +11,67 @@ import { useSupabase } from './contexts/SupabaseContext';
 import { LoginScreen } from './components/LoginScreen';
 import { SupabaseTest } from './components/SupabaseTest';
 
-// --- 타입 정의(생략 가능) ---
-/* ...Subscription, AlarmHistory, Notification, CustomService, Profile... */
+// --- 타입 정의 ---
+interface Subscription {
+  id: number;
+  databaseId?: number;
+  name: string;
+  icon: string;
+  iconImage?: string;
+  price: number;
+  currency: 'KRW' | 'USD' | 'EUR' | 'JPY';
+  renewDate: string;
+  startDate: string;
+  paymentDate?: string;
+  paymentCard?: string;
+  url?: string;
+  color?: string;
+  category?: string;
+}
+
+interface AlarmHistory {
+  id: string;
+  type: 'subscription_added' | 'subscription_updated' | 'subscription_deleted' | 'renewal_reminder' | 'payment_due';
+  content: string;
+  target: string;
+  date: string;
+  datetime: string;
+  icon: React.ComponentType<any>;
+  iconBackground: string;
+  subscriptionId?: number;
+  subscriptionImage?: string;
+}
+
+interface Notification {
+  id: string;
+  type: 'success' | 'warning' | 'error' | 'info';
+  title: string;
+  message: string;
+  timestamp: Date;
+}
+
+interface CustomService {
+  name: string;
+  price: string;
+  currency: 'KRW' | 'USD' | 'EUR' | 'JPY';
+  renewalDate: string;
+  startDate: string;
+  paymentDate: string;
+  paymentCard: string;
+  url: string;
+  category: string;
+  notifications: boolean;
+  iconImage: string;
+}
+
+interface Profile {
+  username: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  photo?: string;
+  coverPhoto?: string;
+}
 
 // --- 컴포넌트 시작 ---
 const SubscriptionApp = () => {
@@ -336,9 +395,420 @@ const SubscriptionApp = () => {
     }
   };
 
-  // --- 이하 나머지 UI/핸들러/렌더링 분기 기존과 동일 ---
-  // ... 기존 코드 활용 (구독 추가/수정/달력/프로필 등)
+  // 10. 환율 정보 가져오기
+  const fetchExchangeRate = async () => {
+    setExchangeRateLoading(true);
+    try {
+      const response = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
+      const data = await response.json();
+      setExchangeRate(data.rates.KRW || 1300);
+    } catch (error) {
+      console.error('환율 정보를 가져오는데 실패했습니다:', error);
+      setExchangeRate(1300); // 기본값 설정
+    } finally {
+      setExchangeRateLoading(false);
+    }
+  };
 
+  // 11. 구독 추가 함수
+  const handleAddSubscription = async () => {
+    if (!user) return;
+    
+    if (!customService.name || !customService.price || !customService.renewalDate) {
+      await addNotification('error', '입력 오류', '필수 정보를 모두 입력해주세요.');
+      return;
+    }
+
+    try {
+      const newSubscription = {
+        user_id: user.id,
+        name: customService.name,
+        icon: '📱',
+        icon_image_url: customService.iconImage || null,
+        price: parseFloat(customService.price),
+        currency: customService.currency,
+        renew_date: customService.renewalDate,
+        start_date: customService.startDate,
+        payment_date: customService.paymentDate ? parseInt(customService.paymentDate) : null,
+        payment_card: customService.paymentCard || null,
+        url: customService.url || null,
+        category: customService.category || null,
+        color: '#3B82F6',
+        is_active: true
+      };
+
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .insert(newSubscription)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error adding subscription:', error);
+        await addNotification('error', '구독 추가 실패', error.message);
+        return;
+      }
+
+      const localSubscription: Subscription = {
+        id: Date.now(),
+        databaseId: data.id,
+        name: data.name,
+        icon: data.icon,
+        iconImage: data.icon_image_url,
+        price: data.price,
+        currency: data.currency,
+        renewDate: data.renew_date,
+        startDate: data.start_date,
+        paymentDate: data.payment_date?.toString(),
+        paymentCard: data.payment_card,
+        url: data.url,
+        color: data.color,
+        category: data.category
+      };
+
+      setSubscriptions(prev => [localSubscription, ...prev]);
+      await addNotification('success', '구독 추가 완료', `${customService.name} 구독이 추가되었습니다.`);
+      await addAlarmHistory('subscription_added', `${customService.name} 구독이 추가되었습니다.`, customService.name, localSubscription.id);
+      
+      // 폼 초기화
+      setCustomService({
+        name: '',
+        price: '',
+        currency: 'KRW',
+        renewalDate: '',
+        startDate: '',
+        paymentDate: '',
+        paymentCard: '',
+        url: '',
+        category: '',
+        notifications: true,
+        iconImage: ''
+      });
+      setCurrentScreen('main');
+    } catch (error) {
+      console.error('Unexpected error adding subscription:', error);
+      await addNotification('error', '구독 추가 실패', '예상치 못한 오류가 발생했습니다.');
+    }
+  };
+
+  // 12. 구독 수정 함수
+  const handleUpdateSubscription = async () => {
+    if (!user || !editingSubscription) return;
+
+    try {
+      const updateData = {
+        name: customService.name,
+        price: parseFloat(customService.price),
+        currency: customService.currency,
+        renew_date: customService.renewalDate,
+        start_date: customService.startDate,
+        payment_date: customService.paymentDate ? parseInt(customService.paymentDate) : null,
+        payment_card: customService.paymentCard || null,
+        url: customService.url || null,
+        category: customService.category || null,
+        icon_image_url: customService.iconImage || null
+      };
+
+      const { error } = await supabase
+        .from('subscriptions')
+        .update(updateData)
+        .eq('id', editingSubscription.databaseId);
+
+      if (error) {
+        console.error('Error updating subscription:', error);
+        await addNotification('error', '구독 수정 실패', error.message);
+        return;
+      }
+
+      // 로컬 상태 업데이트
+      setSubscriptions(prev => prev.map(sub => 
+        sub.id === editingSubscription.id 
+          ? {
+              ...sub,
+              name: customService.name,
+              price: parseFloat(customService.price),
+              currency: customService.currency,
+              renewDate: customService.renewalDate,
+              startDate: customService.startDate,
+              paymentDate: customService.paymentDate,
+              paymentCard: customService.paymentCard,
+              url: customService.url,
+              category: customService.category,
+              iconImage: customService.iconImage
+            }
+          : sub
+      ));
+
+      await addNotification('success', '구독 수정 완료', `${customService.name} 구독이 수정되었습니다.`);
+      await addAlarmHistory('subscription_updated', `${customService.name} 구독이 수정되었습니다.`, customService.name, editingSubscription.id);
+      
+      setEditingSubscription(null);
+      setCurrentScreen('main');
+    } catch (error) {
+      console.error('Unexpected error updating subscription:', error);
+      await addNotification('error', '구독 수정 실패', '예상치 못한 오류가 발생했습니다.');
+    }
+  };
+
+  // 13. 구독 삭제 함수
+  const handleDeleteSubscription = async (subscription: Subscription) => {
+    if (!user || !subscription.databaseId) return;
+
+    try {
+      const { error } = await supabase
+        .from('subscriptions')
+        .update({ is_active: false })
+        .eq('id', subscription.databaseId);
+
+      if (error) {
+        console.error('Error deleting subscription:', error);
+        await addNotification('error', '구독 삭제 실패', error.message);
+        return;
+      }
+
+      setSubscriptions(prev => prev.filter(sub => sub.id !== subscription.id));
+      await addNotification('success', '구독 삭제 완료', `${subscription.name} 구독이 삭제되었습니다.`);
+      await addAlarmHistory('subscription_deleted', `${subscription.name} 구독이 삭제되었습니다.`, subscription.name);
+    } catch (error) {
+      console.error('Unexpected error deleting subscription:', error);
+      await addNotification('error', '구독 삭제 실패', '예상치 못한 오류가 발생했습니다.');
+    }
+  };
+
+  // 14. 프로필 업데이트 함수
+  const handleProfileUpdate = async () => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .upsert({
+          id: user.id,
+          username: profile.username,
+          first_name: profile.firstName,
+          last_name: profile.lastName,
+          email: profile.email,
+          photo_url: profile.photo || null,
+          cover_photo_url: profile.coverPhoto || null,
+          updated_at: new Date().toISOString()
+        });
+
+      if (error) {
+        console.error('Error updating profile:', error);
+        await addNotification('error', '프로필 업데이트 실패', error.message);
+        return;
+      }
+
+      await addNotification('success', '프로필 업데이트 완료', '프로필이 성공적으로 업데이트되었습니다.');
+    } catch (error) {
+      console.error('Unexpected error updating profile:', error);
+      await addNotification('error', '프로필 업데이트 실패', '예상치 못한 오류가 발생했습니다.');
+    }
+  };
+
+  // 15. 로그인되지 않은 경우 로그인 화면 표시
+  if (!isLoggedIn || authLoading) {
+    return <LoginScreen onLoginSuccess={() => {}} />;
+  }
+
+  // 16. 메인 UI 렌더링
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* 알림 표시 */}
+      <Transition
+        show={showNotification}
+        enter="transform ease-out duration-300 transition"
+        enterFrom="translate-y-2 opacity-0 sm:translate-y-0 sm:translate-x-2"
+        enterTo="translate-y-0 opacity-100 sm:translate-x-0"
+        leave="transition ease-in duration-100"
+        leaveFrom="opacity-100"
+        leaveTo="opacity-0"
+      >
+        {notifications.length > 0 && (
+          <div className="fixed top-0 inset-x-0 pt-2 sm:top-0 sm:pt-6 z-50">
+            <div className="mx-auto max-w-sm px-2 sm:px-6 lg:px-8">
+              <div className={`rounded-md p-4 ${
+                notifications[0].type === 'success' ? 'bg-green-50' :
+                notifications[0].type === 'error' ? 'bg-red-50' :
+                notifications[0].type === 'warning' ? 'bg-yellow-50' :
+                'bg-blue-50'
+              }`}>
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    {notifications[0].type === 'success' && (
+                      <CheckCircleIcon className="h-5 w-5 text-green-400" aria-hidden="true" />
+                    )}
+                    {notifications[0].type === 'error' && (
+                      <XMarkIcon className="h-5 w-5 text-red-400" aria-hidden="true" />
+                    )}
+                  </div>
+                  <div className="ml-3">
+                    <p className={`text-sm font-medium ${
+                      notifications[0].type === 'success' ? 'text-green-800' :
+                      notifications[0].type === 'error' ? 'text-red-800' :
+                      notifications[0].type === 'warning' ? 'text-yellow-800' :
+                      'text-blue-800'
+                    }`}>
+                      {notifications[0].title}
+                    </p>
+                    <p className={`mt-1 text-sm ${
+                      notifications[0].type === 'success' ? 'text-green-700' :
+                      notifications[0].type === 'error' ? 'text-red-700' :
+                      notifications[0].type === 'warning' ? 'text-yellow-700' :
+                      'text-blue-700'
+                    }`}>
+                      {notifications[0].message}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </Transition>
+
+      {/* 네비게이션 바 */}
+      <nav className="bg-white shadow-sm">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16">
+            <div className="flex items-center">
+              <h1 className="text-xl font-semibold text-gray-900">구독 관리</h1>
+            </div>
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => setCurrentScreen('notifications')}
+                className="p-2 rounded-md text-gray-400 hover:text-gray-500"
+              >
+                <Bell className="h-6 w-6" />
+                {notifications.length > 0 && (
+                  <span className="ml-1 inline-block bg-red-500 text-white text-xs rounded-full px-2 py-1">
+                    {notifications.length}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={() => setCurrentScreen('profile')}
+                className="p-2 rounded-md text-gray-400 hover:text-gray-500"
+              >
+                <User className="h-6 w-6" />
+              </button>
+              <button
+                onClick={() => setCurrentScreen('supabase-test')}
+                className="p-2 rounded-md text-gray-400 hover:text-gray-500"
+              >
+                <Settings className="h-6 w-6" />
+              </button>
+              <button
+                onClick={signOut}
+                className="text-sm text-gray-500 hover:text-gray-700"
+              >
+                로그아웃
+              </button>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      {/* 메인 콘텐츠 */}
+      <main className="mx-auto max-w-7xl py-6 sm:px-6 lg:px-8">
+        {currentScreen === 'main' && (
+          <div className="px-4 py-6 sm:px-0">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">내 구독</h2>
+              <button
+                onClick={() => setCurrentScreen('add')}
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                구독 추가
+              </button>
+            </div>
+
+            {/* 구독 목록 */}
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {subscriptions.map((subscription) => (
+                <div
+                  key={subscription.id}
+                  className="bg-white overflow-hidden shadow rounded-lg cursor-pointer hover:shadow-md transition-shadow"
+                  onClick={() => {
+                    setSelectedSubscription(subscription);
+                    setCurrentScreen('detail');
+                  }}
+                >
+                  <div className="p-5">
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0">
+                        {subscription.iconImage ? (
+                          <img
+                            src={subscription.iconImage}
+                            alt={subscription.name}
+                            className="h-10 w-10 rounded-lg"
+                          />
+                        ) : (
+                          <div className="h-10 w-10 rounded-lg bg-indigo-500 flex items-center justify-center text-white text-lg">
+                            {subscription.icon}
+                          </div>
+                        )}
+                      </div>
+                      <div className="ml-5 w-0 flex-1">
+                        <dl>
+                          <dt className="text-sm font-medium text-gray-500 truncate">{subscription.name}</dt>
+                          <dd className="text-lg font-medium text-gray-900">
+                            {subscription.currency === 'USD' 
+                              ? `$${subscription.price}` 
+                              : `₩${subscription.price.toLocaleString()}`
+                            }
+                            <span className="text-sm text-gray-500 ml-1">/ 월</span>
+                          </dd>
+                        </dl>
+                      </div>
+                    </div>
+                    <div className="mt-4">
+                      <div className="text-sm text-gray-500">
+                        갱신일: {new Date(subscription.renewDate).toLocaleDateString('ko-KR')}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {subscriptions.length === 0 && (
+              <div className="text-center py-12">
+                <div className="text-gray-400 text-lg mb-4">아직 등록된 구독이 없습니다</div>
+                <button
+                  onClick={() => setCurrentScreen('add')}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700"
+                >
+                  첫 구독 추가하기
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {currentScreen === 'supabase-test' && <SupabaseTest />}
+
+        {/* 다른 화면들은 필요에 따라 추가 */}
+        {currentScreen !== 'main' && currentScreen !== 'supabase-test' && (
+          <div className="px-4 py-6 sm:px-0">
+            <div className="text-center py-12">
+              <div className="text-gray-400 text-lg mb-4">
+                {currentScreen} 화면 (구현 중)
+              </div>
+              <button
+                onClick={() => setCurrentScreen('main')}
+                className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+              >
+                <ChevronLeft className="h-4 w-4 mr-2" />
+                메인으로 돌아가기
+              </button>
+            </div>
+          </div>
+        )}
+      </main>
+    </div>
+  );
 };
 
 export default SubscriptionApp;
