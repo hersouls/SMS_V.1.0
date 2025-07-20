@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Bell, User, Home, Plus, Settings, ChevronLeft
+  Bell, User, Plus, Settings, ChevronLeft
 } from 'lucide-react';
 import { Transition } from '@headlessui/react';
 import {
-  CheckCircleIcon, XMarkIcon, CheckIcon, HandThumbUpIcon, UserIcon
+  CheckCircleIcon, XMarkIcon
 } from '@heroicons/react/24/outline';
 import { useSupabase } from './contexts/SupabaseContext';
 import { LoginScreen } from './components/LoginScreen';
@@ -28,18 +28,7 @@ interface Subscription {
   category?: string;
 }
 
-interface AlarmHistory {
-  id: string;
-  type: 'subscription_added' | 'subscription_updated' | 'subscription_deleted' | 'renewal_reminder' | 'payment_due';
-  content: string;
-  target: string;
-  date: string;
-  datetime: string;
-  icon: React.ComponentType<any>;
-  iconBackground: string;
-  subscriptionId?: number;
-  subscriptionImage?: string;
-}
+// AlarmHistory interface removed as it's not used in current implementation
 
 interface Notification {
   id: string;
@@ -49,19 +38,7 @@ interface Notification {
   timestamp: Date;
 }
 
-interface CustomService {
-  name: string;
-  price: string;
-  currency: 'KRW' | 'USD' | 'EUR' | 'JPY';
-  renewalDate: string;
-  startDate: string;
-  paymentDate: string;
-  paymentCard: string;
-  url: string;
-  category: string;
-  notifications: boolean;
-  iconImage: string;
-}
+// CustomService interface removed as it's not used in current implementation
 
 interface Profile {
   username: string;
@@ -82,28 +59,14 @@ const SubscriptionApp = () => {
   const [showNotification, setShowNotification] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentScreen, setCurrentScreen] = useState<'main' | 'add' | 'manage' | 'detail' | 'notifications' | 'alarm-history' | 'profile' | 'supabase-test'>('main');
-  const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null);
-  const [profile, setProfile] = useState<Profile>({
+  const [, setProfile] = useState<Profile>({
     username: '',
     firstName: '',
     lastName: '',
     email: ''
   });
 
-  // 기타 상태 - removing unused variables
-  const [customService, setCustomService] = useState<CustomService>({
-    name: '',
-    price: '',
-    currency: 'KRW',
-    renewalDate: '',
-    startDate: '',
-    paymentDate: '',
-    paymentCard: '',
-    url: '',
-    category: '',
-    notifications: true,
-    iconImage: ''
-  });
+  // Note: Other state variables removed as they're not used in current implementation
 
   // 알림 추가 함수
   const addNotification = useCallback(async (type: Notification['type'], title: string, message: string) => {
@@ -274,7 +237,18 @@ const SubscriptionApp = () => {
         email: ''
       });
     }
-  }, [user, authLoading, supabaseProfile, loadUserSubscriptions, loadUserNotifications, loadUserAlarmHistory]);
+    }, [user, authLoading, supabaseProfile, loadUserSubscriptions, loadUserNotifications, loadUserAlarmHistory]);
+
+  // 환율 정보 가져오기 함수
+  const fetchExchangeRate = useCallback(async () => {
+    try {
+      const response = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
+      const data = await response.json();
+      console.log('Exchange rate fetched:', data.rates?.KRW || 1300);
+    } catch (error) {
+      console.error('환율 정보를 가져오는데 실패했습니다:', error);
+    }
+  }, []);
 
   // 3. 환율 정보 가져오기
   useEffect(() => {
@@ -282,23 +256,6 @@ const SubscriptionApp = () => {
     const interval = setInterval(fetchExchangeRate, 60 * 60 * 1000);
     return () => clearInterval(interval);
   }, [fetchExchangeRate]);
-
-  
-
-  // 10. 환율 정보 가져오기
-  const fetchExchangeRate = useCallback(async () => {
-    // setExchangeRateLoading(true); // This line was removed as per the edit hint
-    try {
-      const response = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
-      const data = await response.json();
-      // setExchangeRate(data.rates.KRW || 1300); // This line was removed as per the edit hint
-    } catch (error) {
-      console.error('환율 정보를 가져오는데 실패했습니다:', error);
-      // setExchangeRate(1300); // This line was removed as per the edit hint
-          } finally {
-        // setExchangeRateLoading(false); // This line was removed as per the edit hint
-      }
-    }, []);
 
   // Note: Handler functions are commented out as they are currently unused
   // TODO: Implement these functions when add/edit/delete functionality is needed

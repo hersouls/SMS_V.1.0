@@ -36,81 +36,7 @@ export const SupabaseProvider: React.FC<SupabaseProviderProps> = ({ children }) 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = useCallback(async (userId: string, sessionUser?: User) => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (error) {
-        // 프로필이 존재하지 않는 경우 (PGRST116 에러)
-        if (error.code === 'PGRST116') {
-          console.log('Profile not found, creating new profile...');
-          await createProfile(userId, sessionUser);
-          return;
-        }
-        console.error('Error fetching profile:', error);
-        return;
-      }
-
-      setProfile(data);
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-    }
-  }, []);
-
-  useEffect(() => {
-    // Get initial session with timeout
-    const timeoutId = setTimeout(() => {
-      setLoading(false);
-    }, 3000); // 3초 후 강제로 로딩 종료
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      clearTimeout(timeoutId);
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id, session.user);
-      }
-      setLoading(false);
-    }).catch((error) => {
-      console.error('Session fetch error:', error);
-      clearTimeout(timeoutId);
-      setLoading(false);
-    });
-
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event, {
-        session: session ? 'exists' : 'null',
-        user: session?.user ? 'exists' : 'null',
-        email: session?.user?.email,
-        provider: session?.user?.app_metadata?.provider
-      });
-      
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        console.log('User logged in, fetching profile...');
-        await fetchProfile(session.user.id, session.user);
-      } else {
-        console.log('User logged out, clearing profile...');
-        setProfile(null);
-      }
-      setLoading(false);
-    });
-
-    return () => {
-      clearTimeout(timeoutId);
-      subscription.unsubscribe();
-    };
-  }, [fetchProfile]);
-
-  const createProfile = async (userId: string, sessionUser?: User) => {
+  const createProfile = useCallback(async (userId: string, sessionUser?: User) => {
     try {
       const currentUser = sessionUser || user;
       if (!currentUser) {
@@ -171,7 +97,83 @@ export const SupabaseProvider: React.FC<SupabaseProviderProps> = ({ children }) 
     } catch (error) {
       console.error('Error creating profile:', error);
     }
-  };
+  }, [user]);
+
+  const fetchProfile = useCallback(async (userId: string, sessionUser?: User) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        // 프로필이 존재하지 않는 경우 (PGRST116 에러)
+        if (error.code === 'PGRST116') {
+          console.log('Profile not found, creating new profile...');
+          await createProfile(userId, sessionUser);
+          return;
+        }
+        console.error('Error fetching profile:', error);
+        return;
+      }
+
+      setProfile(data);
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    }
+  }, [createProfile]);
+
+  useEffect(() => {
+    // Get initial session with timeout
+    const timeoutId = setTimeout(() => {
+      setLoading(false);
+    }, 3000); // 3초 후 강제로 로딩 종료
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      clearTimeout(timeoutId);
+      setSession(session);
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        fetchProfile(session.user.id, session.user);
+      }
+      setLoading(false);
+    }).catch((error) => {
+      console.error('Session fetch error:', error);
+      clearTimeout(timeoutId);
+      setLoading(false);
+    });
+
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event, {
+        session: session ? 'exists' : 'null',
+        user: session?.user ? 'exists' : 'null',
+        email: session?.user?.email,
+        provider: session?.user?.app_metadata?.provider
+      });
+      
+      setSession(session);
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        console.log('User logged in, fetching profile...');
+        await fetchProfile(session.user.id, session.user);
+      } else {
+        console.log('User logged out, clearing profile...');
+        setProfile(null);
+      }
+      setLoading(false);
+    });
+
+    return () => {
+      clearTimeout(timeoutId);
+      subscription.unsubscribe();
+    };
+  }, [fetchProfile]);
+
+
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
