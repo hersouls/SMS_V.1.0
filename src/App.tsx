@@ -489,7 +489,9 @@ const SubscriptionApp = () => {
       console.error('Unexpected error adding subscription:', error);
       await addNotification('error', '구독 추가 실패', '예상치 못한 오류가 발생했습니다.');
     }
-    const handleEditSubscription = (subscription: Subscription) => {
+  };
+
+  const handleEditSubscription = (subscription: Subscription) => {
     setEditingSubscription(subscription);
     setCustomService({
       name: subscription.name,
@@ -546,7 +548,7 @@ const SubscriptionApp = () => {
               currency: customService.currency,
               renewDate: customService.renewalDate,
               startDate: customService.startDate,
-              paymentDate: customService.paymentDate,
+              paymentDate: customService.paymentDate || '',
               paymentCard: customService.paymentCard,
               url: customService.url,
               category: customService.category,
