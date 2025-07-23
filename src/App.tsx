@@ -1443,77 +1443,30 @@ const SubscriptionApp = () => {
 
 
   // 공통 헤더 컴포넌트
-  const CommonHeader = () => (
-        <div className="relative px-4 pt-8 pb-8">
-          <div className="flex justify-between items-center mb-6">
-        {/* 왼쪽: 홈 버튼 */}
-        <div className="flex items-center">
-          <button 
-            onClick={() => {
-              console.log('홈 버튼 클릭됨 - CommonHeader');
-              setCurrentScreen('main');
-              setSelectedSubscription(null);
-              setEditingSubscription(null);
-              resetForm();
-            }}
-            className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm hover:bg-white/30 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-white/50 cursor-pointer z-20"
-            style={{ pointerEvents: 'auto', position: 'relative' }}
-          >
-            <Home className="w-5 h-5 text-white" />
-          </button>
-        </div>
-        
-        {/* 오른쪽: 알람 + 아바타 */}
-        <div className="flex items-center gap-3">
-          <button 
-            onClick={() => setCurrentScreen('alarm-history')}
-            className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm hover:bg-white/30 transition-colors duration-200 relative cursor-pointer z-10"
-            style={{ pointerEvents: 'auto' }}
-          >
-            <Bell className="w-5 h-5 text-white" />
-            {alarmHistory.length > 0 && (
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
-                <span className="text-white text-xs font-bold">{alarmHistory.length}</span>
-              </span>
-            )}
-          </button>
-          <button 
-            onClick={() => {
-              console.log('아바타 버튼 클릭됨 - CommonHeader');
-              setCurrentScreen('profile');
-            }}
-            className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm hover:bg-white/30 transition-colors duration-200 cursor-pointer z-10 overflow-hidden"
-            style={{ pointerEvents: 'auto', position: 'relative' }}
-          >
-            {profile.photo ? (
-              <img 
-                src={profile.photo} 
-                alt="프로필 사진"
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <User className="w-5 h-5 text-white" />
-            )}
-          </button>
-            </div>
-          </div>
+  // Import new UI components
+  import Header from './components/ui/header';
+  import StatsCard from './components/ui/stats-card';
+  import SubscriptionCard from './components/ui/subscription-card';
+  import { Button } from './components/ui/button';
+  import { Plus, TrendingUp, CreditCard } from 'lucide-react';
 
-          {/* 웨이브 효과 */}
-          <div className="absolute bottom-0 left-0 right-0">
-            <svg viewBox="0 0 375 60" className="w-full h-15">
-              <path
-                d="M0,20 C100,0 200,40 375,25 L375,60 L0,60 Z"
-                fill="white"
-                fillOpacity="0.1"
-              />
-              <path
-                d="M0,35 C150,15 250,50 375,30 L375,60 L0,60 Z"
-                fill="white"
-                fillOpacity="0.15"
-              />
-            </svg>
-          </div>
-        </div>
+  const CommonHeader = () => (
+    <Header
+      onHomeClick={() => {
+        console.log('홈 버튼 클릭됨 - CommonHeader');
+        setCurrentScreen('main');
+        setSelectedSubscription(null);
+        setEditingSubscription(null);
+        resetForm();
+      }}
+      onNotificationClick={() => setCurrentScreen('alarm-history')}
+      onProfileClick={() => {
+        console.log('아바타 버튼 클릭됨 - CommonHeader');
+        setCurrentScreen('profile');
+      }}
+      notificationCount={alarmHistory.length}
+      profile={profile}
+    />
   );
 
   // 메인 구독 관리 화면
@@ -1531,73 +1484,34 @@ const SubscriptionApp = () => {
 
         {/* 메인 콘텐츠 */}
         <div className="bg-gray-50 rounded-t-3xl px-4 pt-8 pb-24 min-h-[70vh] -mt-4 relative z-10">
-          {/* 총액 및 구독 수 카드 */}
-          <div className="bg-white rounded-2xl p-6 shadow-md mb-8">
-            <div className="flex justify-between items-center">
-              <div className="text-left">
-                <p className="text-gray-600 text-lg font-medium mb-1">총 구독 수:</p>
-                <p className="text-3xl font-bold text-gray-900">
-                  {subscriptions.length}개
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-gray-600 text-lg font-medium mb-1">총액 (원화):</p>
-                <div className="space-y-1">
-                  <p className="text-2xl font-bold text-gray-900">
-                    ₩{Math.round(totalAmountInKRW).toLocaleString()} <span className="text-lg font-normal text-gray-500">/ 월</span>
-                  </p>
-                  {exchangeRateLoading && (
-                    <p className="text-xs text-gray-500">환율 정보 업데이트 중...</p>
-                  )}
-                </div>
-              </div>
-            </div>
+          {/* 통계 카드 섹션 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <StatsCard
+              title="총 구독 수"
+              value={`${subscriptions.length}개`}
+              subtitle="활성 구독 서비스"
+              icon={<TrendingUp className="w-5 h-5" />}
+              variant="info"
+            />
+            <StatsCard
+              title="월 총액"
+              value={`₩${Math.round(totalAmountInKRW).toLocaleString()}`}
+              subtitle={exchangeRateLoading ? "환율 정보 업데이트 중..." : "원화 기준"}
+              icon={<CreditCard className="w-5 h-5" />}
+              variant="gradient"
+            />
           </div>
 
           {/* 구독 서비스 리스트 */}
           <div className="space-y-4 mb-8">
             {subscriptions.map((subscription) => (
-              <div
+              <SubscriptionCard
                 key={subscription.id}
-                className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow duration-200 cursor-pointer"
-                onClick={() => {
-                  handleEditSubscription(subscription);
-                }}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <button
-                      onClick={(e: React.MouseEvent) => {
-                        e.stopPropagation();
-                        if (subscription.url) {
-                          window.open(subscription.url, '_blank', 'noopener,noreferrer');
-                        }
-                      }}
-                      className="w-12 h-12 rounded-xl flex items-center justify-center text-xl font-bold text-white shadow-sm overflow-hidden hover:opacity-80 transition-opacity duration-200"
-                      style={{ backgroundColor: subscription.color }}
-                      disabled={!subscription.url}
-                    >
-                      {subscription.iconImage ? (
-                        <img 
-                          src={subscription.iconImage} 
-                          alt={subscription.name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        subscription.icon
-                      )}
-                    </button>
-                    <div>
-                      <h3 className="text-lg font-bold text-gray-900 mb-1">
-                        {subscription.name}
-                      </h3>
-                      <p className="text-sm text-gray-500 flex items-center gap-1">
-                        <Calendar className="w-4 h-4" />
-                        매월 결제일: {subscription.paymentDate ?? '미설정'}일
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
+                subscription={subscription}
+                onEdit={handleEditSubscription}
+                onDelete={handleDeleteSubscription}
+              />
+            ))}
                   <span className="text-xl font-bold text-gray-900">
                     ₩{Math.round(convertToKRW(subscription.price, subscription.currency)).toLocaleString()}
                   </span>
@@ -1792,15 +1706,17 @@ const SubscriptionApp = () => {
       <div className="fixed bottom-20 right-4 flex flex-col gap-3 z-40">
         
         {/* 구독 추가 버튼 */}
-        <button
+        <Button
           onClick={() => {
             setCurrentScreen('add');
             resetForm();
           }}
-          className="rounded-full bg-indigo-600 p-3 text-white shadow-lg hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+          variant="gradient"
+          size="icon"
+          className="w-12 h-12 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110"
         >
           <Plus className="w-6 h-6" />
-        </button>
+        </Button>
       </div>
       </>
     );
