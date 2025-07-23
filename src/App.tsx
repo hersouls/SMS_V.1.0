@@ -9,6 +9,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { useSupabase } from './contexts/SupabaseContext';
 import { LoginScreen } from './components/LoginScreen';
+import { GoogleAuthDebug } from './components/GoogleAuthDebug';
 
 
 // --- 타입 정의 ---
@@ -1264,7 +1265,12 @@ const SubscriptionApp = () => {
 
   // 로그인하지 않은 경우 로그인 화면 표시
   if (!isLoggedIn) {
-    return <LoginScreen onLoginSuccess={() => setIsLoggedIn(true)} />;
+    return (
+      <>
+        <LoginScreen onLoginSuccess={() => setIsLoggedIn(true)} />
+        <GoogleAuthDebug />
+      </>
+    );
   }
 
 
