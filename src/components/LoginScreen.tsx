@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSupabase } from '../contexts/SupabaseContext';
 
 interface LoginScreenProps {
@@ -12,6 +12,20 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [debugInfo, setDebugInfo] = useState<string[]>([]);
+
+  // 디버그 정보 추가 함수
+  const addDebugInfo = (info: string) => {
+    setDebugInfo(prev => [...prev, `${new Date().toLocaleTimeString()}: ${info}`]);
+  };
+
+  // 컴포넌트 마운트 시 디버그 정보 초기화
+  useEffect(() => {
+    addDebugInfo('LoginScreen mounted');
+    addDebugInfo(`Current URL: ${window.location.href}`);
+    addDebugInfo(`Origin: ${window.location.origin}`);
+    addDebugInfo(`User Agent: ${navigator.userAgent}`);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,30 +50,69 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
   const handleGoogleSignIn = async () => {
     setLoading(true);
     setError('');
+    addDebugInfo('Google sign-in initiated');
     
     try {
       console.log('Starting Google OAuth...');
-      const { error } = await supabase.auth.signInWithOAuth({
+      addDebugInfo('Starting Google OAuth...');
+      console.log('Current URL:', window.location.href);
+      console.log('Origin:', window.location.origin);
+      
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/`,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
+            hd: '*', // 모든 도메인 허용
           },
+          skipBrowserRedirect: false,
         }
       });
       
       if (error) {
         console.error('Google OAuth error:', error);
+        addDebugInfo(`Google OAuth error: ${error.message}`);
         throw error;
       }
       
+      console.log('Google OAuth response:', data);
+      addDebugInfo(`Google OAuth response: ${JSON.stringify(data)}`);
       console.log('Google OAuth initiated successfully');
+      addDebugInfo('Google OAuth initiated successfully');
+      
       // OAuth는 리다이렉트를 통해 처리되므로 여기서는 로딩 상태를 유지
+      // 하지만 일정 시간 후 로딩 상태를 해제하여 사용자가 다시 시도할 수 있도록 함
+      const timeoutId = setTimeout(() => {
+        if (loading) {
+          setLoading(false);
+          setError('Google 로그인이 완료되지 않았습니다. 다시 시도해주세요.');
+          addDebugInfo('Google OAuth timeout - login not completed');
+        }
+      }, 10000); // 10초 후 타임아웃
+      
+      // 컴포넌트 언마운트 시 타임아웃 정리
+      return () => clearTimeout(timeoutId);
+      
     } catch (error: any) {
       console.error('Google sign-in error:', error);
-      setError(`Google 로그인 실패: ${error.message}`);
+      addDebugInfo(`Google sign-in error: ${error.message}`);
+      let errorMessage = 'Google 로그인에 실패했습니다.';
+      
+      if (error.message) {
+        if (error.message.includes('popup')) {
+          errorMessage = '팝업이 차단되었습니다. 팝업 차단을 해제하고 다시 시도해주세요.';
+        } else if (error.message.includes('network')) {
+          errorMessage = '네트워크 오류가 발생했습니다. 인터넷 연결을 확인해주세요.';
+        } else if (error.message.includes('cancelled')) {
+          errorMessage = '로그인이 취소되었습니다.';
+        } else {
+          errorMessage = `Google 로그인 실패: ${error.message}`;
+        }
+      }
+      
+      setError(errorMessage);
       setLoading(false);
     }
   };
@@ -228,6 +281,20 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
         <p className="mt-10 text-center text-sm/6 text-gray-500">
           구독 관리를 시작하고 모든 구독 서비스를 한 곳에서 관리하세요.
         </p>
+        
+        {/* 디버그 정보 (개발 환경에서만 표시) */}
+        {process.env.NODE_ENV === 'development' && debugInfo.length > 0 && (
+          <div className="mt-8 p-4 bg-gray-100 rounded-lg">
+            <h3 className="text-sm font-semibold text-gray-700 mb-2">디버그 정보:</h3>
+            <div className="text-xs text-gray-600 max-h-32 overflow-y-auto">
+              {debugInfo.map((info, index) => (
+                <div key={index} className="mb-1">
+                  {info}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

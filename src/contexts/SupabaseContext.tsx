@@ -42,6 +42,13 @@ export const SupabaseProvider: React.FC<SupabaseProviderProps> = ({ children }) 
       setLoading(false);
     }, 3000); // 3초 후 강제로 로딩 종료
 
+    // URL에서 OAuth 콜백 파라미터 확인
+    const urlParams = new URLSearchParams(window.location.search);
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    
+    console.log('URL params:', Object.fromEntries(urlParams.entries()));
+    console.log('Hash params:', Object.fromEntries(hashParams.entries()));
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       clearTimeout(timeoutId);
       setSession(session);
@@ -72,20 +79,34 @@ export const SupabaseProvider: React.FC<SupabaseProviderProps> = ({ children }) 
       
       if (session?.user) {
         console.log('User logged in, fetching profile...');
+        console.log('User metadata:', session.user.user_metadata);
+        console.log('App metadata:', session.user.app_metadata);
+        
         await fetchProfile(session.user.id, session.user);
         
         // OAuth 로그인 성공 후 URL 정리
         if (event === 'SIGNED_IN' && (session.user.app_metadata?.provider === 'google' || session.user.app_metadata?.provider === 'kakao')) {
+          console.log('OAuth login successful, cleaning URL...');
           const currentURL = window.location.href;
           const urlObj = new URL(currentURL);
           
           // OAuth 콜백 파라미터가 있는 경우 정리
           if (urlObj.searchParams.has('access_token') || 
               urlObj.searchParams.has('refresh_token') || 
-              urlObj.hash.includes('access_token')) {
+              urlObj.hash.includes('access_token') ||
+              urlObj.searchParams.has('error') ||
+              urlObj.searchParams.has('error_description') ||
+              urlObj.searchParams.has('code') ||
+              urlObj.searchParams.has('state')) {
             const cleanURL = `${urlObj.origin}/`;
+            console.log('Cleaning URL from:', currentURL, 'to:', cleanURL);
             window.history.replaceState({}, document.title, cleanURL);
           }
+        }
+        
+        // OAuth 오류 처리
+        if (event === 'TOKEN_REFRESHED' && session?.user?.app_metadata?.provider === 'google') {
+          console.log('Google token refreshed successfully');
         }
       } else {
         console.log('User logged out, clearing profile...');
