@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useSupabase } from '../contexts/SupabaseContext';
+import { StepByStepSignUp } from './StepByStepSignUp';
 
 interface LoginScreenProps {
   onLoginSuccess: () => void;
 }
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
-  const { signIn, signUp, supabase } = useSupabase();
-  const [isSignUp, setIsSignUp] = useState(false);
+  const { signIn, supabase } = useSupabase();
+  const [showStepByStepSignUp, setShowStepByStepSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -33,13 +34,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
     setError('');
 
     try {
-      if (isSignUp) {
-        await signUp(email, password);
-        setError('가입 확인 이메일을 확인해주세요.');
-      } else {
-        await signIn(email, password);
-        onLoginSuccess();
-      }
+      await signIn(email, password);
+      onLoginSuccess();
     } catch (error: any) {
       setError(error.message);
     } finally {
@@ -143,6 +139,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
     }
   };
 
+  // Step by Step 회원가입 화면 표시
+  if (showStepByStepSignUp) {
+    return (
+      <StepByStepSignUp onBackToLogin={() => setShowStepByStepSignUp(false)} />
+    );
+  }
+
   return (
     <div className="flex min-h-full flex-1 flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
@@ -150,16 +153,16 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
           <span className="text-white text-xl font-bold">S</span>
         </div>
         <h2 className="mt-6 text-center text-2xl/9 font-bold tracking-tight text-gray-900">
-          {isSignUp ? '계정 만들기' : '구독 관리 앱에 로그인'}
+          구독 관리 앱에 로그인
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600">
-          {isSignUp ? '이미 계정이 있으신가요?' : '아직 계정이 없으신가요?'}{' '}
+          아직 계정이 없으신가요?{' '}
           <button
             type="button"
-            onClick={() => setIsSignUp(!isSignUp)}
+            onClick={() => setShowStepByStepSignUp(true)}
             className="font-semibold text-blue-600 hover:text-blue-500"
           >
-            {isSignUp ? '로그인하기' : '가입하기'}
+            가입하기
           </button>
         </p>
       </div>
@@ -196,7 +199,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
                   name="password"
                   type="password"
                   required
-                  autoComplete={isSignUp ? "new-password" : "current-password"}
+                  autoComplete="current-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-blue-600 sm:text-sm/6"
@@ -217,7 +220,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
                 disabled={loading}
                 className="flex w-full justify-center rounded-md bg-blue-600 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-xs hover:bg-blue-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? '처리 중...' : (isSignUp ? '가입하기' : '로그인')}
+                {loading ? '처리 중...' : '로그인'}
               </button>
             </div>
           </form>
