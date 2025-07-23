@@ -34,10 +34,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
     setError('');
 
     try {
+      console.log('Login attempt for email:', email);
       await signIn(email, password);
+      console.log('Login successful');
       onLoginSuccess();
     } catch (error: any) {
-      setError(error.message);
+      console.error('Login error:', error);
+      setError(error.message || '로그인 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
     }

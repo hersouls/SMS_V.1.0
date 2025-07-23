@@ -102,6 +102,26 @@ REACT_APP_SUPABASE_ANON_KEY=your_supabase_anon_key
 REACT_APP_EXCHANGE_RATE_API_KEY=your_exchange_rate_api_key
 ```
 
+### 이메일 인증 설정
+
+Supabase에서 이메일 인증이 제대로 작동하도록 다음 설정을 확인하세요:
+
+1. **Supabase Dashboard > Authentication > Settings > Auth Providers**
+   - Email provider가 활성화되어 있는지 확인
+   - "Confirm email" 옵션이 활성화되어 있는지 확인
+
+2. **Supabase Dashboard > Authentication > Email Templates**
+   - Confirm signup 템플릿이 올바르게 설정되어 있는지 확인
+   - 이메일 제목과 내용이 한글로 적절히 설정되어 있는지 확인
+
+3. **환경 변수 설정**
+   - `REACT_APP_SUPABASE_URL`과 `REACT_APP_SUPABASE_ANON_KEY`가 올바르게 설정되어 있는지 확인
+
+4. **이메일 전송 문제 해결**
+   - 스팸 폴더 확인
+   - 이메일 주소 오타 확인
+   - Supabase 프로젝트의 이메일 전송 한도 확인
+
 ### 소셜 로그인 설정
 
 구글과 카카오톡 소셜 로그인을 사용하려면 Supabase에서 다음 설정을 완료해야 합니다:

@@ -66,6 +66,59 @@ Network 탭에서 Supabase API 호출이 성공적으로 완료되는지 확인�
 3. 개발자 도구의 콘솔 로그를 확인하여 구체적인 에러 메시지 확인
 4. 네트워크 탭에서 API 호출 상태 확인
 
+## 이메일 인증 문제 해결
+
+### 문제: 이메일 인증 메일을 받지 못함
+
+#### 1. 기본 확인사항
+- 스팸 폴더 확인
+- 이메일 주소 오타 확인
+- Supabase 프로젝트 설정 확인
+
+#### 2. Supabase 설정 확인
+1. **Supabase Dashboard > Authentication > Settings > Auth Providers**
+   - Email provider가 활성화되어 있는지 확인
+   - "Confirm email" 옵션이 활성화되어 있는지 확인
+
+2. **Supabase Dashboard > Authentication > Email Templates**
+   - Confirm signup 템플릿이 올바르게 설정되어 있는지 확인
+   - 이메일 제목과 내용이 한글로 적절히 설정되어 있는지 확인
+
+#### 3. 환경 변수 확인
+```bash
+# .env.local 파일에 다음 설정이 있는지 확인
+REACT_APP_SUPABASE_URL=your_supabase_project_url
+REACT_APP_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+#### 4. 디버깅 방법
+브라우저 개발자 도구의 Console 탭에서 다음 로그들을 확인하세요:
+- `Sending verification email to:` - 이메일 전송 시도
+- `Sign up response:` - 회원가입 응답
+- `Email verification required` - 이메일 인증 필요 상태
+- `User automatically signed in` - 자동 로그인 상태
+
+#### 5. 수동 인증 상태 확인
+회원가입 화면에서 "인증 상태 확인하기" 버튼을 클릭하여 현재 인증 상태를 확인할 수 있습니다.
+
+### 문제: "invalid login credentials" 오류
+
+#### 1. 일반적인 원인
+- 이메일 주소 오타
+- 비밀번호 오타
+- 이메일 인증 미완료
+- 계정이 존재하지 않음
+
+#### 2. 해결 방법
+1. **이메일 인증 확인**: 회원가입 후 이메일 인증이 완료되었는지 확인
+2. **비밀번호 재설정**: Supabase Dashboard에서 사용자 비밀번호 재설정
+3. **계정 재생성**: 기존 계정 삭제 후 새로 회원가입
+
+#### 3. 디버깅 방법
+브라우저 개발자 도구의 Console 탭에서 다음 로그들을 확인하세요:
+- `Login attempt for email:` - 로그인 시도
+- `Sign in error:` - 로그인 오류 상세 정보
+
 ### 추가 지원
 
 문제가 해결되지 않는 경우, 다음 정보와 함께 문의해주세요:
@@ -73,3 +126,4 @@ Network 탭에서 Supabase API 호출이 성공적으로 완료되는지 확인�
 - 콘솔 로그 내용
 - 네트워크 탭의 에러 정보
 - `window.debugSubscriptionApp.getState()` 결과
+- 이메일 인증 관련 오류 메시지
