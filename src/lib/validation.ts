@@ -24,7 +24,7 @@ export const validateConfirmPassword = (password: string, confirmPassword: strin
 
 export const validateName = (name: string, fieldName: string): string | null => {
   if (!name) return `${fieldName}을(를) 입력해주세요.`;
-  if (name.length < 2) return `${fieldName}은(는) 최소 2자 이상이어야 합니다.`;
+  if (name.length < 1) return `${fieldName}은(는) 최소 1자 이상이어야 합니다.`;
   if (name.length > 50) return `${fieldName}은(는) 최대 50자까지 입력 가능합니다.`;
   return null;
 };

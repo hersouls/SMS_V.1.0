@@ -210,11 +210,34 @@ export const SupabaseProvider: React.FC<SupabaseProviderProps> = ({ children }) 
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
+    console.log('Attempting sign in for email:', email);
+    
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
-    if (error) throw error;
+    
+    if (error) {
+      console.error('Sign in error:', error);
+      let errorMessage = error.message;
+      
+      // 더 명확한 오류 메시지 제공
+      if (error.message.includes('Invalid login credentials')) {
+        errorMessage = '이메일 또는 비밀번호가 올바르지 않습니다. 다시 확인해주세요.';
+      } else if (error.message.includes('Email not confirmed')) {
+        errorMessage = '이메일 인증이 완료되지 않았습니다. 이메일을 확인하여 인증을 완료해주세요.';
+      } else if (error.message.includes('Too many requests')) {
+        errorMessage = '너무 많은 로그인 시도가 있었습니다. 잠시 후 다시 시도해주세요.';
+      } else if (error.message.includes('User not found')) {
+        errorMessage = '등록되지 않은 이메일 주소입니다. 회원가입을 먼저 진행해주세요.';
+      }
+      
+      const customError = new Error(errorMessage);
+      customError.name = error.name;
+      throw customError;
+    }
+    
+    console.log('Sign in successful:', data);
   };
 
   const signUp = async (email: string, password: string) => {
