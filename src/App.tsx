@@ -234,7 +234,7 @@ const SubscriptionApp = () => {
   }, [isAddingSubscription, addingProgress, currentScreen, user, subscriptions, customService]);
 
   // 4.5. Supabase 연결 테스트 (재시도 로직 포함)
-  const testSupabaseConnection = async (retryCount = 0) => {
+  const testSupabaseConnection = async (retryCount = 0): Promise<boolean> => {
     const maxRetries = 2;
     
     try {
