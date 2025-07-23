@@ -100,6 +100,7 @@ const SubscriptionApp = () => {
   const [exchangeRateLoading, setExchangeRateLoading] = useState(false);
   const [isAddingSubscription, setIsAddingSubscription] = useState(false);
   const [isUpdatingSubscription, setIsUpdatingSubscription] = useState(false);
+  const [addingProgress, setAddingProgress] = useState('');
   const [isSavingProfile, setIsSavingProfile] = useState(false);
 
   const [customService, setCustomService] = useState<CustomService>({
@@ -200,10 +201,44 @@ const SubscriptionApp = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // 4.5. Supabase 연결 테스트
-  const testSupabaseConnection = async () => {
+  // 4.5. 구독 추가 상태 추적
+  useEffect(() => {
+    console.log('isAddingSubscription 상태 변화:', isAddingSubscription);
+  }, [isAddingSubscription]);
+
+  // 4.6. 디버깅을 위한 전역 함수 설정
+  useEffect(() => {
+    // 개발자 도구에서 디버깅할 수 있도록 전역 함수 설정
+    (window as any).debugSubscriptionApp = {
+      getState: () => ({
+        isAddingSubscription,
+        addingProgress,
+        currentScreen,
+        user: user?.id,
+        subscriptions: subscriptions.length,
+        customService
+      }),
+      resetAddingState: () => {
+        console.log('수동으로 isAddingSubscription 상태 리셋');
+        setIsAddingSubscription(false);
+        setAddingProgress('');
+      },
+      testConnection: () => testSupabaseConnection(),
+      checkNetwork: () => {
+        console.log('네트워크 상태 확인:', navigator.onLine);
+        return navigator.onLine;
+      }
+    };
+    
+    console.log('디버깅 함수 설정 완료. 개발자 도구에서 window.debugSubscriptionApp 사용 가능');
+  }, [isAddingSubscription, addingProgress, currentScreen, user, subscriptions, customService]);
+
+  // 4.5. Supabase 연결 테스트 (재시도 로직 포함)
+  const testSupabaseConnection = async (retryCount = 0) => {
+    const maxRetries = 2;
+    
     try {
-      console.log('Supabase 연결 테스트 시작...');
+      console.log(`Supabase 연결 테스트 시작... (시도 ${retryCount + 1}/${maxRetries + 1})`);
       
       // 사용자 인증 상태 확인
       if (!user) {
@@ -219,6 +254,14 @@ const SubscriptionApp = () => {
         
       if (error) {
         console.error('Supabase 연결 테스트 실패:', error.message, error);
+        
+        // 재시도 로직
+        if (retryCount < maxRetries) {
+          console.log(`${1000 * (retryCount + 1)}ms 후 재시도...`);
+          await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
+          return testSupabaseConnection(retryCount + 1);
+        }
+        
         return false;
       }
       
@@ -226,6 +269,14 @@ const SubscriptionApp = () => {
       return true;
     } catch (error) {
       console.error('Supabase 연결 예외:', error);
+      
+      // 재시도 로직
+      if (retryCount < maxRetries) {
+        console.log(`${1000 * (retryCount + 1)}ms 후 재시도...`);
+        await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
+        return testSupabaseConnection(retryCount + 1);
+      }
+      
       return false;
     }
   };
@@ -560,11 +611,29 @@ const SubscriptionApp = () => {
       renewalDate: customService.renewalDate,
       supabase: !!supabase
     });
+    
+    // 로딩 상태 설정
     setIsAddingSubscription(true);
     
+    // 타임아웃 설정 (30초)
+    const timeoutId = setTimeout(() => {
+      console.error('구독 추가 타임아웃 발생');
+      alert('구독 추가가 시간 초과되었습니다. 다시 시도해주세요.');
+      setIsAddingSubscription(false);
+    }, 30000);
+    
     try {
+      // 네트워크 상태 확인
+      if (!navigator.onLine) {
+        console.error('네트워크 연결이 없습니다');
+        alert('인터넷 연결을 확인해주세요.');
+        setIsAddingSubscription(false);
+        return;
+      }
+
       // 필수 필드 검증
       if (!customService.renewalDate) {
+        console.log('구독 갱신일이 선택되지 않음');
         alert('구독 갱신일을 선택해주세요.');
         setIsAddingSubscription(false);
         return;
@@ -579,53 +648,93 @@ const SubscriptionApp = () => {
       });
 
       // Supabase 연결 테스트
+      console.log('Supabase 연결 테스트 시작...');
+      setAddingProgress('데이터베이스 연결 확인 중...');
       const connectionTest = await testSupabaseConnection();
       if (!connectionTest) {
+        console.error('Supabase 연결 테스트 실패');
         alert('데이터베이스에 연결할 수 없습니다. 네트워크 연결을 확인해주세요.');
         setIsAddingSubscription(false);
+        setAddingProgress('');
         return;
       }
+      console.log('Supabase 연결 테스트 성공');
+      setAddingProgress('구독 정보 저장 중...');
+
+      // 삽입할 데이터 준비
+      const insertData = {
+        user_id: user.id,
+        name: customService.name,
+        icon: '📱',
+        icon_image_url: customService.iconImage,
+        price: parseFloat(customService.price),
+        currency: customService.currency,
+        renew_date: customService.renewalDate,
+        start_date: customService.startDate || new Date().toISOString().split('T')[0],
+        payment_date: (() => {
+          const parsedDate = parseInt(customService.paymentDate);
+          if (!isNaN(parsedDate) && parsedDate >= 1 && parsedDate <= 31) {
+            return parsedDate;
+          }
+          try {
+            const renewDate = new Date(customService.renewalDate);
+            if (!isNaN(renewDate.getTime())) {
+              return renewDate.getDate();
+            }
+          } catch (e) {
+            // Do nothing
+          }
+          return 1; // Default to 1st of the month
+        })(),
+        payment_card: customService.paymentCard,
+        url: customService.url,
+        color: '#6C63FF',
+        category: customService.category,
+        is_active: true
+      };
+
+      console.log('삽입할 데이터:', insertData);
 
       const { data, error } = await supabase
         .from('subscriptions')
-        .insert({
-          user_id: user.id,
-          name: customService.name,
-          icon: '📱',
-          icon_image_url: customService.iconImage,
-          price: parseFloat(customService.price),
-          currency: customService.currency,
-          renew_date: customService.renewalDate,
-          start_date: customService.startDate || new Date().toISOString().split('T')[0],
-          payment_date: (() => {
-            const parsedDate = parseInt(customService.paymentDate);
-            if (!isNaN(parsedDate) && parsedDate >= 1 && parsedDate <= 31) {
-              return parsedDate;
-            }
-            try {
-              const renewDate = new Date(customService.renewalDate);
-              if (!isNaN(renewDate.getTime())) {
-                return renewDate.getDate();
-              }
-            } catch (e) {
-              // Do nothing
-            }
-            return 1; // Default to 1st of the month
-          })(),
-          payment_card: customService.paymentCard,
-          url: customService.url,
-          color: '#6C63FF',
-          category: customService.category,
-          is_active: true
-        })
+        .insert(insertData)
         .select()
         .single();
 
       if (error) {
         console.error('Supabase 구독 추가 오류:', error);
-        alert(`구독 추가 실패: ${error.message || '알 수 없는 오류가 발생했습니다.'}`);
+        console.error('에러 상세 정보:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+        
+        let errorMessage = '알 수 없는 오류가 발생했습니다.';
+        let userFriendlyMessage = '구독 추가 중 오류가 발생했습니다.';
+        
+        if (error.message) {
+          errorMessage = error.message;
+          // 사용자 친화적인 메시지로 변환
+          if (error.message.includes('duplicate key')) {
+            userFriendlyMessage = '이미 동일한 구독이 존재합니다.';
+          } else if (error.message.includes('foreign key')) {
+            userFriendlyMessage = '사용자 정보가 올바르지 않습니다. 다시 로그인해주세요.';
+          } else if (error.message.includes('network')) {
+            userFriendlyMessage = '네트워크 연결을 확인해주세요.';
+          } else if (error.message.includes('timeout')) {
+            userFriendlyMessage = '요청 시간이 초과되었습니다. 다시 시도해주세요.';
+          } else {
+            userFriendlyMessage = `구독 추가 중 오류가 발생했습니다: ${error.message}`;
+          }
+        } else if (error.details) {
+          errorMessage = error.details;
+          userFriendlyMessage = `구독 추가 중 오류가 발생했습니다: ${error.details}`;
+        }
+        
+        alert(`구독 추가 실패: ${userFriendlyMessage}`);
         try {
-          await addNotification('error', '구독 추가 실패', `구독 추가 중 오류가 발생했습니다: ${error.message}`);
+          await addNotification('error', '구독 추가 실패', userFriendlyMessage);
         } catch (notificationError) {
           console.error('알림 추가 오류:', notificationError);
         }
@@ -634,6 +743,7 @@ const SubscriptionApp = () => {
       }
 
       console.log('구독 추가 성공:', data);
+      setAddingProgress('알림 설정 중...');
       
       const localSubscription: Subscription = {
         id: Date.now(),
@@ -652,27 +762,40 @@ const SubscriptionApp = () => {
         category: data.category || ''
       };
 
+      console.log('로컬 구독 객체 생성:', localSubscription);
       setSubscriptions(prev => [localSubscription, ...prev]);
       
       // 알림과 알람 히스토리는 실패해도 구독 추가는 성공으로 처리
       try {
+        console.log('성공 알림 추가 중...');
         await addNotification('success', '구독 추가 완료', `${customService.name} 구독이 성공적으로 추가되었습니다.`);
+        console.log('성공 알림 추가 완료');
       } catch (notificationError) {
         console.error('알림 추가 오류:', notificationError);
       }
       
       try {
+        console.log('알람 히스토리 추가 중...');
         await addAlarmHistory('subscription_added', '구독이 추가되었습니다', customService.name, data.id);
+        console.log('알람 히스토리 추가 완료');
       } catch (alarmError) {
         console.error('알람 히스토리 추가 오류:', alarmError);
       }
 
+      console.log('메인 화면으로 이동 중...');
       // 성공시에만 메인 화면으로 이동
       setCurrentScreen('main');
       resetForm();
+      console.log('구독 추가 프로세스 완료');
       
     } catch (error) {
       console.error('구독 추가 중 예외 발생:', error);
+      console.error('예외 상세 정보:', {
+        name: error instanceof Error ? error.name : 'Unknown',
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      });
+      
       const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
       alert(`구독 추가 실패: ${errorMessage}`);
       
@@ -684,7 +807,10 @@ const SubscriptionApp = () => {
       
       // 오류 시에는 메인 화면으로 돌아가지 않음
     } finally {
+      console.log('구독 추가 프로세스 종료 - 로딩 상태 해제');
+      clearTimeout(timeoutId);
       setIsAddingSubscription(false);
+      setAddingProgress('');
     }
   };
 
@@ -2539,13 +2665,30 @@ const SubscriptionApp = () => {
                 {/* 로딩 중 오버레이 */}
                 {isAddingSubscription && (
                   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-2xl p-6 shadow-lg">
-                      <div className="flex items-center space-x-3">
+                    <div className="bg-white rounded-2xl p-6 shadow-lg max-w-sm w-full mx-4">
+                      <div className="flex items-center space-x-3 mb-4">
                         <svg className="animate-spin h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
                         <span className="text-gray-700 font-medium">구독을 추가하고 있습니다...</span>
+                      </div>
+                      {addingProgress && (
+                        <div className="text-center mb-4">
+                          <p className="text-sm text-gray-600">{addingProgress}</p>
+                        </div>
+                      )}
+                      <div className="text-center">
+                        <button
+                          onClick={() => {
+                            console.log('사용자가 구독 추가를 취소함');
+                            setIsAddingSubscription(false);
+                            setAddingProgress('');
+                          }}
+                          className="text-sm text-gray-500 hover:text-gray-700 underline"
+                        >
+                          취소
+                        </button>
                       </div>
                     </div>
                   </div>
