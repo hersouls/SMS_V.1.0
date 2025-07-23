@@ -28,6 +28,9 @@ interface Subscription {
   url?: string;
   color?: string;
   category?: string;
+  isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 interface AlarmHistory {
@@ -246,14 +249,27 @@ const SubscriptionApp = () => {
         return false;
       }
 
-      // 간단한 쿼리로 연결 테스트
+      // 네트워크 연결 확인
+      if (!navigator.onLine) {
+        console.error('네트워크 연결이 없습니다.');
+        return false;
+      }
+
+      // 간단한 쿼리로 연결 테스트 (더 안전한 방법)
       const { data, error } = await supabase
-        .from('subscriptions')
+        .from('profiles')
         .select('id')
+        .eq('id', user.id)
         .limit(1);
         
       if (error) {
         console.error('Supabase 연결 테스트 실패:', error.message, error);
+        
+        // 특정 에러 코드에 대한 처리
+        if (error.code === 'PGRST116') {
+          console.error('인증 토큰이 만료되었습니다.');
+          return false;
+        }
         
         // 재시도 로직
         if (retryCount < maxRetries) {
@@ -570,19 +586,44 @@ const SubscriptionApp = () => {
       if (data && !error) {
         setExchangeRate(data.rate);
       } else {
-        // 오늘 환율 데이터가 없으면 임시 환율 사용 및 저장
-        const mockExchangeRate = 1300 + Math.random() * 50;
-        setExchangeRate(mockExchangeRate);
-        
-        // Supabase에 환율 정보 저장
-        await supabase
-          .from('exchange_rates')
-          .upsert({
-            base_currency: 'USD',
-            target_currency: 'KRW',
-            rate: mockExchangeRate,
-            date: today
-          });
+        // 외부 API에서 환율 정보 가져오기 (API 키가 설정된 경우)
+        const apiKey = process.env.REACT_APP_EXCHANGE_RATE_API_KEY;
+        if (apiKey && apiKey !== 'your_exchange_rate_api_key') {
+          try {
+            const response = await fetch(`https://api.exchangerate-api.com/v4/latest/USD`);
+            const exchangeData = await response.json();
+            const usdToKrw = exchangeData.rates.KRW;
+            setExchangeRate(usdToKrw);
+            
+            // Supabase에 환율 정보 저장
+            await supabase
+              .from('exchange_rates')
+              .upsert({
+                base_currency: 'USD',
+                target_currency: 'KRW',
+                rate: usdToKrw,
+                date: today
+              });
+          } catch (apiError) {
+            console.warn('외부 환율 API 실패, 기본값 사용:', apiError);
+            const mockExchangeRate = 1300 + Math.random() * 50;
+            setExchangeRate(mockExchangeRate);
+          }
+        } else {
+          // API 키가 없으면 임시 환율 사용
+          const mockExchangeRate = 1300 + Math.random() * 50;
+          setExchangeRate(mockExchangeRate);
+          
+          // Supabase에 환율 정보 저장
+          await supabase
+            .from('exchange_rates')
+            .upsert({
+              base_currency: 'USD',
+              target_currency: 'KRW',
+              rate: mockExchangeRate,
+              date: today
+            });
+        }
       }
     } catch (error) {
       console.error('환율 정보를 가져오는데 실패했습니다:', error);
