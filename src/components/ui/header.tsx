@@ -48,6 +48,19 @@ const Header: React.FC<HeaderProps> = ({
         </div>
         
 
+        {/* 중앙 네비게이션 - 태블릿에서는 숨김 */}
+        <nav className="hidden lg:flex gap-6">
+          <button className="text-white/80 hover:text-white transition-colors duration-200">대시보드</button>
+          <button className="text-white/80 hover:text-white transition-colors duration-200">구독 관리</button>
+          <button className="text-white/80 hover:text-white transition-colors duration-200">통계</button>
+          <button className="text-white/80 hover:text-white transition-colors duration-200">설정</button>
+          <a 
+            href="/supabase-test" 
+            className="text-white/80 hover:text-white transition-colors duration-200"
+          >
+            🔧 연결 테스트
+          </a>
+        </nav>
         
         {/* 우측 메뉴 */}
         <div className="flex items-center gap-2 lg:gap-4">
