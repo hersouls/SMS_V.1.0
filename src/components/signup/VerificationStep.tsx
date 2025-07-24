@@ -4,6 +4,7 @@ import { useSupabase } from '../../contexts/SupabaseContext';
 import { checkSupabaseConnection } from '../../lib/supabase';
 import { CheckCircleIcon, ExclamationCircleIcon } from '@heroicons/react/24/outline';
 import { SupabaseDebugger } from '../SupabaseDebugger';
+import { EmailTemplateTester } from '../EmailTemplateTester';
 
 interface VerificationStepProps {
   data: SignUpData;
@@ -242,6 +243,12 @@ export const VerificationStep: React.FC<VerificationStepProps> = ({
       {process.env.NODE_ENV === 'development' && (
         <div className="mt-6">
           <SupabaseDebugger />
+        </div>
+      )}
+
+      {process.env.NODE_ENV === 'development' && (
+        <div className="mt-6">
+          <EmailTemplateTester />
         </div>
       )}
 
