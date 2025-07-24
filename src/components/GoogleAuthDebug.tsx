@@ -14,17 +14,24 @@ export const GoogleAuthDebug: React.FC = () => {
     addDebugInfo('=== Google Auth Test Started ===');
     
     try {
-      // 1. Supabase 클라이언트 상태 확인
+      // 1. 환경 변수 확인
+      addDebugInfo('Checking environment variables...');
+      addDebugInfo(`Site URL: ${process.env.REACT_APP_SITE_URL || 'not set'}`);
+      addDebugInfo(`Supabase URL: ${process.env.REACT_APP_SUPABASE_URL || 'not set'}`);
+      addDebugInfo(`Supabase Key: ${process.env.REACT_APP_SUPABASE_ANON_KEY ? 'set' : 'not set'}`);
+      
+      // 2. Supabase 클라이언트 상태 확인
       addDebugInfo('Checking Supabase client...');
       const session = await supabase.auth.getSession();
       addDebugInfo(`Current session: ${session.data.session ? 'exists' : 'null'}`);
       
-      // 2. OAuth URL 생성 테스트
+      // 3. OAuth URL 생성 테스트
       addDebugInfo('Testing OAuth URL generation...');
+      const siteUrl = process.env.REACT_APP_SITE_URL || window.location.origin;
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/`,
+          redirectTo: `${siteUrl}/auth/callback`,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -35,6 +42,7 @@ export const GoogleAuthDebug: React.FC = () => {
       if (error) {
         addDebugInfo(`OAuth Error: ${error.message}`);
         addDebugInfo(`Error Code: ${error.status}`);
+        addDebugInfo(`Error Details: ${JSON.stringify(error)}`);
       } else {
         addDebugInfo(`OAuth URL: ${data.url}`);
         addDebugInfo('OAuth URL generated successfully');
@@ -42,6 +50,7 @@ export const GoogleAuthDebug: React.FC = () => {
       
     } catch (error: any) {
       addDebugInfo(`Test Error: ${error.message}`);
+      addDebugInfo(`Error Stack: ${error.stack}`);
     }
     
     addDebugInfo('=== Google Auth Test Completed ===');

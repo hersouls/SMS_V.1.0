@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import {
   Search, Check, Calendar, DollarSign, Tag, Bell, User, Home, Menu, Plus, Edit2, Trash2, Upload, Image,
   Settings, ChevronLeft, ChevronRight, CreditCard, Globe, Banknote, CalendarRange, TrendingUp
@@ -10,6 +11,7 @@ import {
 import { useSupabase } from './contexts/SupabaseContext';
 import { LoginScreen } from './components/LoginScreen';
 import { GoogleAuthDebug } from './components/GoogleAuthDebug';
+import { AuthCallback } from './components/AuthCallback';
 import Header from './components/ui/header';
 import StatsCard from './components/ui/stats-card';
 import SubscriptionCard from './components/ui/subscription-card';
@@ -2678,4 +2680,16 @@ const SubscriptionApp = () => {
   );
 };
 
-export default SubscriptionApp;
+// 메인 앱 컴포넌트를 라우팅으로 감싸기
+const App = () => {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="/*" element={<SubscriptionApp />} />
+      </Routes>
+    </Router>
+  );
+};
+
+export default App;
