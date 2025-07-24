@@ -274,16 +274,29 @@ export const SupabaseProvider: React.FC<SupabaseProviderProps> = ({ children }) 
   const updateProfile = async (updates: Partial<Profile>) => {
     if (!user) throw new Error('No user logged in');
 
-    const { error } = await supabase
+    console.log('Updating profile in Supabase:', updates);
+    console.log('Current user ID:', user.id);
+
+    const { data, error } = await supabase
       .from('profiles')
       .update(updates)
-      .eq('id', user.id);
+      .eq('id', user.id)
+      .select()
+      .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase update error:', error);
+      throw error;
+    }
+
+    console.log('Profile updated in Supabase:', data);
 
     // Update local profile state
-    if (profile) {
-      setProfile({ ...profile, ...updates });
+    if (data) {
+      console.log('Updating local profile state with:', data);
+      setProfile(data);
+    } else {
+      console.warn('No data returned from Supabase update');
     }
   };
 

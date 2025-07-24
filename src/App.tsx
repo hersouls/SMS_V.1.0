@@ -148,6 +148,7 @@ const SubscriptionApp = () => {
 
       // 프로필 동기화
       if (supabaseProfile) {
+        console.log('Syncing profile from Supabase:', supabaseProfile);
         setProfile({
           username: supabaseProfile.username || '',
           firstName: supabaseProfile.first_name || '',
@@ -157,6 +158,7 @@ const SubscriptionApp = () => {
           coverPhoto: supabaseProfile.cover_photo_url || ''
         });
       } else if (user.user_metadata) {
+        console.log('Syncing profile from user metadata:', user.user_metadata);
         const fullName = user.user_metadata.full_name || user.user_metadata.name || '';
         const nameParts = fullName.split(' ');
         setProfile({
@@ -170,6 +172,7 @@ const SubscriptionApp = () => {
       }
     } else if (!user && !authLoading) {
       // 로그아웃 시 모든 데이터 완전 초기화
+      console.log('User logged out, clearing all data');
       setIsLoggedIn(false);
       setSubscriptions([]);
       setNotifications([]);
@@ -182,6 +185,21 @@ const SubscriptionApp = () => {
       });
     }
   }, [user, authLoading, supabaseProfile]);
+
+  // 2.1. supabaseProfile 변경 시 로컬 프로필 동기화
+  useEffect(() => {
+    if (supabaseProfile && user) {
+      console.log('Supabase profile updated, syncing local profile:', supabaseProfile);
+      setProfile({
+        username: supabaseProfile.username || '',
+        firstName: supabaseProfile.first_name || '',
+        lastName: supabaseProfile.last_name || '',
+        email: supabaseProfile.email || user.email || '',
+        photo: supabaseProfile.photo_url || '',
+        coverPhoto: supabaseProfile.cover_photo_url || ''
+      });
+    }
+  }, [supabaseProfile, user]);
 
   // 3. URL 해시 처리 및 정규화
   useEffect(() => {
@@ -1252,7 +1270,11 @@ const SubscriptionApp = () => {
       
       // 로컬 상태도 업데이트
       setProfile(prev => ({ ...prev, ...updates }));
+      
+      // 성공 알림 추가
       await addNotification('success', '프로필 업데이트 완료', '프로필이 성공적으로 업데이트되었습니다.');
+      
+      console.log('Profile updated successfully:', supabaseUpdates);
     } catch (error) {
       console.error('Error updating profile:', error);
       const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
@@ -1408,13 +1430,45 @@ const SubscriptionApp = () => {
     
     setIsSavingProfile(true);
     try {
-      await updateProfile(profile);
+      // 현재 profile과 supabaseProfile을 비교하여 변경된 필드만 업데이트
+      const updates: Partial<Profile> = {};
+      
+      if (supabaseProfile) {
+        if (profile.username !== supabaseProfile.username) updates.username = profile.username;
+        if (profile.firstName !== supabaseProfile.first_name) updates.firstName = profile.firstName;
+        if (profile.lastName !== supabaseProfile.last_name) updates.lastName = profile.lastName;
+        if (profile.email !== supabaseProfile.email) updates.email = profile.email;
+        if (profile.photo !== supabaseProfile.photo_url) updates.photo = profile.photo;
+        if (profile.coverPhoto !== supabaseProfile.cover_photo_url) updates.coverPhoto = profile.coverPhoto;
+      } else {
+        // supabaseProfile이 없는 경우 전체 profile을 업데이트
+        updates.username = profile.username;
+        updates.firstName = profile.firstName;
+        updates.lastName = profile.lastName;
+        updates.email = profile.email;
+        updates.photo = profile.photo;
+        updates.coverPhoto = profile.coverPhoto;
+      }
+      
+      console.log('Profile updates to be saved:', updates);
+      
+      if (Object.keys(updates).length > 0) {
+        console.log('Saving profile updates:', updates);
+        await updateProfile(updates);
+        console.log('Profile saved successfully');
+      } else {
+        console.log('No changes detected in profile');
+        await addNotification('info', '변경사항 없음', '프로필에 변경사항이 없습니다.');
+      }
     } catch (error) {
       console.error('Error saving profile:', error);
       await addNotification('error', '프로필 저장 실패', '프로필 저장 중 오류가 발생했습니다.');
     } finally {
       setIsSavingProfile(false);
-      setCurrentScreen('main');
+      // 저장 완료 후 잠시 대기 후 메인 화면으로 이동
+      setTimeout(() => {
+        setCurrentScreen('main');
+      }, 500);
     }
   };
 
