@@ -65,9 +65,6 @@ React와 TypeScript로 개발된 구독 서비스 관리 애플리케이션입�
 │   ├── supabase-schema.sql
 │   ├── supabase-sql-editor.sql
 │   └── supabase-test-queries.sql
-├── .github/              # GitHub Actions 워크플로우
-│   └── workflows/
-│       └── deploy.yml    # 자동 배포 설정
 └── package.json          # 프로젝트 설정
 ```
 
