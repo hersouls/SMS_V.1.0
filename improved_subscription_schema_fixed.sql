@@ -401,3 +401,102 @@ SELECT
     '1. 프론트엔드 코드에서 필드명 통일' as step1,
     '2. 구독 추가 로직 단일화' as step2,
     '3. 에러 핸들링 개선' as step3;
+
+-- =====================================================
+-- Row Level Security (RLS) 활성화 및 정책 생성
+-- =====================================================
+
+-- 20. RLS 활성화
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.subscriptions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.custom_services ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.alarm_history ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.exchange_rates ENABLE ROW LEVEL SECURITY;
+
+-- 21. RLS 정책 생성
+
+-- 프로필 테이블 정책
+CREATE POLICY "Users can view own profile" ON public.profiles
+    FOR SELECT USING (auth.uid() = id);
+
+CREATE POLICY "Users can update own profile" ON public.profiles
+    FOR UPDATE USING (auth.uid() = id);
+
+CREATE POLICY "Users can insert own profile" ON public.profiles
+    FOR INSERT WITH CHECK (auth.uid() = id);
+
+-- 구독 테이블 정책
+CREATE POLICY "Users can view own subscriptions" ON public.subscriptions
+    FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own subscriptions" ON public.subscriptions
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own subscriptions" ON public.subscriptions
+    FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own subscriptions" ON public.subscriptions
+    FOR DELETE USING (auth.uid() = user_id);
+
+-- 커스텀 서비스 테이블 정책
+CREATE POLICY "Users can view own custom services" ON public.custom_services
+    FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own custom services" ON public.custom_services
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own custom services" ON public.custom_services
+    FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own custom services" ON public.custom_services
+    FOR DELETE USING (auth.uid() = user_id);
+
+-- 알림 테이블 정책
+CREATE POLICY "Users can view own notifications" ON public.notifications
+    FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own notifications" ON public.notifications
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own notifications" ON public.notifications
+    FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own notifications" ON public.notifications
+    FOR DELETE USING (auth.uid() = user_id);
+
+-- 알람 히스토리 테이블 정책
+CREATE POLICY "Users can view own alarm history" ON public.alarm_history
+    FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own alarm history" ON public.alarm_history
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own alarm history" ON public.alarm_history
+    FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own alarm history" ON public.alarm_history
+    FOR DELETE USING (auth.uid() = user_id);
+
+-- 환율 테이블 정책 (인증된 사용자만 접근 가능)
+CREATE POLICY "Authenticated users can view exchange rates" ON public.exchange_rates
+    FOR SELECT USING (auth.role() = 'authenticated');
+
+CREATE POLICY "Authenticated users can insert exchange rates" ON public.exchange_rates
+    FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+
+-- =====================================================
+-- RLS 정책 확인
+-- =====================================================
+SELECT 
+    'RLS Policies Created' as info,
+    COUNT(*) as count
+FROM pg_policies 
+WHERE schemaname = 'public';
+
+-- =====================================================
+-- 최종 완료 메시지
+-- =====================================================
+SELECT 
+    '🎉 RLS 정책이 성공적으로 적용되었습니다!' as status,
+    NOW() as completed_at;

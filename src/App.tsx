@@ -12,6 +12,8 @@ import { useSupabase } from './contexts/SupabaseContext';
 import { LoginScreen } from './components/LoginScreen';
 import { GoogleAuthDebug } from './components/GoogleAuthDebug';
 import { AuthCallback } from './components/AuthCallback';
+import { SupabaseDebugger } from './components/SupabaseDebugger';
+import { EmergencyTroubleshooter } from './components/EmergencyTroubleshooter';
 import Header from './components/ui/header';
 import StatsCard from './components/ui/stats-card';
 import SubscriptionCard from './components/ui/subscription-card';
@@ -247,9 +249,94 @@ const SubscriptionApp = () => {
     console.log('isAddingSubscription 상태 변화:', isAddingSubscription);
   }, [isAddingSubscription]);
 
-  // 4.6. 디버깅을 위한 전역 함수 설정
+  // 4.6. 실시간 진단 도구 설정 (매뉴얼 기반)
   useEffect(() => {
-    // 개발자 도구에서 디버깅할 수 있도록 전역 함수 설정
+    // 매뉴얼에서 제안한 실시간 진단 도구
+    (window as any).supabaseMonitor = {
+      // 프로필 상태 확인
+      checkProfile: async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return console.log("❌ No user logged in");
+        
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id);
+        
+        console.log("🔍 Profile check:", { data, error });
+        if (error) {
+          console.log("❌ Profile error:", error.message, error.code);
+        } else {
+          console.log("✅ Profile found:", data);
+        }
+      },
+      
+      // 구독 데이터 확인
+      checkSubscriptions: async () => {
+        const { data, error } = await supabase
+          .from('subscriptions')
+          .select('*');
+        
+        console.log("🔍 Subscriptions check:", { data, error });
+        if (error) {
+          console.log("❌ Subscriptions error:", error.message, error.code);
+        } else {
+          console.log("✅ Subscriptions found:", data?.length || 0, "items");
+        }
+      },
+      
+      // RLS 정책 확인
+      checkRLS: async () => {
+        console.log("🔍 Testing RLS policies...");
+        
+        try {
+          const { data } = await supabase.from('subscriptions').select('count');
+          console.log("✅ Subscriptions accessible");
+        } catch (error) {
+          console.log("❌ Subscriptions blocked:", error.message);
+        }
+        
+        try {
+          const { data } = await supabase.from('profiles').select('count');
+          console.log("✅ Profiles accessible");
+        } catch (error) {
+          console.log("❌ Profiles blocked:", error.message);
+        }
+      },
+      
+      // 세션 상태 확인
+      checkAuthState: async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        console.log("🔍 Current session:", session);
+        
+        if (session) {
+          console.log("✅ User ID:", session.user.id);
+          console.log("✅ Access token valid:", !!session.access_token);
+          console.log("✅ Token expires at:", new Date(session.expires_at * 1000));
+        } else {
+          console.log("❌ No active session found");
+        }
+      },
+      
+      // 네트워크 상태 확인
+      checkNetwork: () => {
+        console.log("🔍 Network status:", navigator.onLine);
+        return navigator.onLine;
+      },
+      
+      // 전체 진단 실행
+      runFullDiagnostic: async () => {
+        console.log("🚀 Running full diagnostic...");
+        await (window as any).supabaseMonitor.checkAuthState();
+        await (window as any).supabaseMonitor.checkProfile();
+        await (window as any).supabaseMonitor.checkSubscriptions();
+        await (window as any).supabaseMonitor.checkRLS();
+        (window as any).supabaseMonitor.checkNetwork();
+        console.log("✅ Full diagnostic completed");
+      }
+    };
+    
+    // 기존 디버깅 함수도 유지
     (window as any).debugSubscriptionApp = {
       getState: () => ({
         isAddingSubscription,
@@ -271,8 +358,13 @@ const SubscriptionApp = () => {
       }
     };
     
-    console.log('디버깅 함수 설정 완료. 개발자 도구에서 window.debugSubscriptionApp 사용 가능');
-  }, [isAddingSubscription, addingProgress, currentScreen, user, subscriptions, customService]);
+    console.log('🔧 실시간 진단 도구 설정 완료!');
+    console.log('📋 사용법:');
+    console.log('  - window.supabaseMonitor.checkProfile()');
+    console.log('  - window.supabaseMonitor.checkSubscriptions()');
+    console.log('  - window.supabaseMonitor.checkRLS()');
+    console.log('  - window.supabaseMonitor.runFullDiagnostic()');
+  }, [isAddingSubscription, addingProgress, currentScreen, user, subscriptions, customService, supabase]);
 
   // 4.5. Supabase 연결 테스트 (재시도 로직 포함)
   const testSupabaseConnection = async (retryCount = 0): Promise<boolean> => {
@@ -1488,6 +1580,7 @@ const SubscriptionApp = () => {
   };
 
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [showEmergencyTroubleshooter, setShowEmergencyTroubleshooter] = useState(false);
 
   const handleLogout = async () => {
     if (isLoggingOut) {
@@ -2122,15 +2215,26 @@ const SubscriptionApp = () => {
         
         {/* 개발 환경에서만 보이는 디버그 버튼 */}
         {process.env.NODE_ENV === 'development' && (
-          <Button
-            onClick={debugSubscriptionAdd}
-            variant="outline"
-            size="icon"
-            className="w-12 h-12 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-500"
-            title="구독 추가 디버그 테스트"
-          >
-            🔧
-          </Button>
+          <>
+            <Button
+              onClick={debugSubscriptionAdd}
+              variant="outline"
+              size="icon"
+              className="w-12 h-12 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-500"
+              title="구독 추가 디버그 테스트"
+            >
+              🔧
+            </Button>
+            <Button
+              onClick={() => setShowEmergencyTroubleshooter(true)}
+              variant="outline"
+              size="icon"
+              className="w-12 h-12 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 bg-red-500 hover:bg-red-600 text-white border-red-500"
+              title="긴급 상황 진단 도구"
+            >
+              🚨
+            </Button>
+          </>
         )}
         
         {/* 구독 추가 버튼 */}
@@ -2146,6 +2250,13 @@ const SubscriptionApp = () => {
           <Plus className="w-6 h-6" />
         </Button>
       </div>
+
+      {/* 개발 환경에서만 보이는 Supabase 디버거 */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="fixed top-4 left-4 z-50 max-w-md">
+          <SupabaseDebugger />
+        </div>
+      )}
 
       {/* 디버그 패널 */}
       <DebugPanel
@@ -2177,6 +2288,12 @@ const SubscriptionApp = () => {
           console.clear();
           console.log('=== 콘솔 로그가 지워졌습니다 ===');
         }}
+      />
+
+      {/* 긴급 상황 진단 도구 */}
+      <EmergencyTroubleshooter
+        isVisible={showEmergencyTroubleshooter}
+        onClose={() => setShowEmergencyTroubleshooter(false)}
       />
       </>
     );
