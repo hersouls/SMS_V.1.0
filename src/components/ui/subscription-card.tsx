@@ -4,6 +4,7 @@ import { Badge } from './badge';
 import { Button } from './button';
 import { cn, safeFormatCurrency, safeConvertToKRW, isValidNumber } from '../../lib/utils';
 import { Calendar, ExternalLink, Edit2, Trash2, AlertTriangle } from 'lucide-react';
+import SafeImage from './safe-image';
 
 interface SubscriptionCardProps {
   subscription: {
@@ -100,42 +101,43 @@ const SubscriptionCard: React.FC<SubscriptionCardProps> = ({
       hasError && 'border-red-200 bg-red-50/50',
       className
     )}>
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4 flex-1">
+      <CardContent className="p-4 sm:p-6">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
             {/* 서비스 아이콘 */}
-            <div className="relative">
+            <div className="relative flex-shrink-0">
               <div
-                className="w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-bold text-white shadow-lg overflow-hidden hover:opacity-80 transition-opacity duration-200"
+                className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center text-lg sm:text-xl font-bold text-white shadow-lg overflow-hidden hover:opacity-80 transition-opacity duration-200"
                 style={{ backgroundColor: subscription.color || '#3B82F6' }}
                 onClick={handleVisit}
               >
                 {subscription.iconImage ? (
-                  <img 
-                    src={subscription.iconImage} 
+                  <SafeImage
+                    src={subscription.iconImage}
                     alt={subscription.name}
-                    className="w-full h-full object-cover"
+                    fallback={<span className="text-white text-lg">{subscription.icon}</span>}
+                    placeholder="bg-gray-100"
                   />
                 ) : (
                   subscription.icon
                 )}
               </div>
               {subscription.url && (
-                <div className="absolute -top-1 -right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                  <ExternalLink className="w-3 h-3 text-white" />
+                <div className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 bg-blue-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  <ExternalLink className="w-2 h-2 sm:w-3 sm:h-3 text-white" />
                 </div>
               )}
               {hasError && (
-                <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
-                  <AlertTriangle className="w-3 h-3 text-white" />
+                <div className="absolute -bottom-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 bg-red-500 rounded-full flex items-center justify-center">
+                  <AlertTriangle className="w-2 h-2 sm:w-3 sm:h-3 text-white" />
                 </div>
               )}
             </div>
 
             {/* 서비스 정보 */}
-            <div className="flex-1 min-w-0">
+            <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 mb-2">
-                <h3 className="text-lg font-bold text-gray-900 truncate">
+                <h3 className="text-base sm:text-lg font-bold text-gray-900 truncate">
                   {subscription.name}
                 </h3>
                 {subscription.category && (
@@ -161,27 +163,32 @@ const SubscriptionCard: React.FC<SubscriptionCardProps> = ({
                   <span>매월 {subscription.paymentDate || '미설정'}일</span>
                 </div>
               </div>
+              
+              {/* 모바일에서는 전체 이름을 아래쪽에 표시 */}
+              <p className="text-xs text-gray-400 block sm:hidden mt-1 line-clamp-2">
+                {subscription.name}
+              </p>
             </div>
           </div>
 
           {/* 가격 및 액션 버튼 */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 flex-shrink-0">
             <div className="text-right">
               <p className={cn(
-                "text-2xl font-bold",
+                "text-lg sm:text-2xl font-bold",
                 hasError ? "text-red-600" : "text-gray-900"
               )}>
                 {originalPrice}
               </p>
               {convertedPrice && (
                 <p className={cn(
-                  "text-sm",
+                  "text-xs sm:text-sm",
                   hasError ? "text-red-500" : "text-gray-500"
                 )}>
                   {convertedPrice}
                 </p>
               )}
-              <p className="text-sm text-gray-500">/ 월</p>
+              <p className="text-xs sm:text-sm text-gray-500">/ 월</p>
               {hasError && (
                 <p className="text-xs text-red-600 mt-1">
                   환율 정보 확인 필요
@@ -189,12 +196,13 @@ const SubscriptionCard: React.FC<SubscriptionCardProps> = ({
               )}
             </div>
             
-            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            {/* 데스크톱에서는 호버 시에만 표시 */}
+            <div className="hidden sm:flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={handleEdit}
-                className="h-8 w-8 text-gray-600 hover:text-blue-600"
+                className="h-10 w-10 text-gray-600 hover:text-blue-600"
               >
                 <Edit2 className="w-4 h-4" />
               </Button>
@@ -202,12 +210,34 @@ const SubscriptionCard: React.FC<SubscriptionCardProps> = ({
                 variant="ghost"
                 size="icon"
                 onClick={handleDelete}
-                className="h-8 w-8 text-gray-600 hover:text-red-600"
+                className="h-10 w-10 text-gray-600 hover:text-red-600"
               >
                 <Trash2 className="w-4 h-4" />
               </Button>
             </div>
           </div>
+        </div>
+        
+        {/* 모바일에서는 액션 버튼을 하단에 배치 */}
+        <div className="flex gap-2 mt-4 sm:hidden">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleEdit}
+            className="flex-1 h-10 text-sm"
+          >
+            <Edit2 className="w-4 h-4 mr-2" />
+            수정
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDelete}
+            className="flex-1 h-10 text-sm text-red-600 hover:text-red-700"
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            삭제
+          </Button>
         </div>
       </CardContent>
     </Card>

@@ -23,6 +23,8 @@ import SubscriptionForm from './components/ui/subscription-form';
 import DebugPanel from './components/DebugPanel';
 import { Button } from './components/ui/button';
 import TestPage from './pages/TestPage';
+import { createDebugObject } from './utils/responsive-debug';
+import ResponsiveTestPanel from './components/ResponsiveTestPanel';
 
 
 // --- 타입 정의 ---
@@ -90,9 +92,14 @@ interface Profile {
   coverPhoto?: string;
 }
 
-// --- 컴포넌트 시작 ---
-const SubscriptionApp = () => {
-  const { user, profile: supabaseProfile, loading: authLoading, signOut, supabase, updateProfile: updateSupabaseProfile } = useSupabase();
+  // --- 컴포넌트 시작 ---
+  const SubscriptionApp = () => {
+    const { user, profile: supabaseProfile, loading: authLoading, signOut, supabase, updateProfile: updateSupabaseProfile } = useSupabase();
+
+    // 반응형 디버깅 도구 초기화
+    React.useEffect(() => {
+      createDebugObject();
+    }, []);
 
   // 1. 빈 값으로 모든 상태 선언
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
@@ -1905,24 +1912,26 @@ const SubscriptionApp = () => {
         <CommonHeader />
 
         {/* 메인 콘텐츠 */}
-        <div className="bg-gray-50 rounded-t-3xl px-4 pt-8 pb-24 min-h-[70vh] -mt-4 relative z-0">
-          {/* 통계 카드 섹션 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <StatsCard
-              title="총 구독 수"
-              value={`${subscriptions.length}개`}
-              subtitle="활성 구독 서비스"
-              icon={<TrendingUp className="w-5 h-5" />}
-              variant="info"
-            />
-            <StatsCard
-              title="월 총액"
-              value={`₩${Math.round(totalAmountInKRW).toLocaleString()}`}
-              subtitle={exchangeRateLoading ? "환율 정보 업데이트 중..." : "원화 기준"}
-              icon={<CreditCard className="w-5 h-5" />}
-              variant="gradient"
-            />
-          </div>
+        <div className="bg-gray-50 rounded-t-3xl px-4 lg:px-6 xl:px-8 pt-8 pb-24 min-h-[70vh] -mt-4 relative z-0">
+          {/* 반응형 최대 너비 제한 */}
+          <div className="max-w-[1400px] 2xl:max-w-[1600px] mx-auto">
+            {/* 통계 카드 섹션 */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-2 2xl:grid-cols-3 gap-4 lg:gap-6 mb-8">
+              <StatsCard
+                title="총 구독 수"
+                value={`${subscriptions.length}개`}
+                subtitle="활성 구독 서비스"
+                icon={<TrendingUp className="w-5 h-5" />}
+                variant="info"
+              />
+              <StatsCard
+                title="월 총액"
+                value={`₩${Math.round(totalAmountInKRW).toLocaleString()}`}
+                subtitle={exchangeRateLoading ? "환율 정보 업데이트 중..." : "원화 기준"}
+                icon={<CreditCard className="w-5 h-5" />}
+                variant="gradient"
+              />
+            </div>
 
           {/* 구독 서비스 리스트 */}
           <div className="space-y-4 mb-8">
@@ -1935,8 +1944,6 @@ const SubscriptionApp = () => {
               />
             ))}
           </div>
-
-
 
           {/* 달력 섹션 */}
           <div className="bg-white rounded-t-2xl shadow-md overflow-hidden">
