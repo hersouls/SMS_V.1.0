@@ -87,10 +87,38 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // 클라이언트 사이드 검증
+    if (!formData.name.trim()) {
+      alert('서비스명을 입력해주세요.');
+      return;
+    }
+
+    if (!formData.price || formData.price <= 0) {
+      alert('올바른 가격을 입력해주세요.');
+      return;
+    }
+
+    if (!formData.renewDate) {
+      alert('갱신일을 선택해주세요.');
+      return;
+    }
+
+    // 결제일 검증
+    if (formData.paymentDate && (parseInt(formData.paymentDate) < 1 || parseInt(formData.paymentDate) > 31)) {
+      alert('결제일은 1일부터 31일 사이여야 합니다.');
+      return;
+    }
+
+    // URL 검증 (입력된 경우에만)
+    if (formData.url && formData.url.trim() && !formData.url.match(/^https?:\/\/.+/)) {
+      alert('올바른 URL 형식을 입력해주세요. (예: https://example.com)');
+      return;
+    }
+    
     // Supabase DB 스키마에 맞게 필드명 변환
     const submitData = {
       id: subscription?.id,
-      name: formData.name,
+      name: formData.name.trim(),
       icon: formData.icon,
       icon_image_url: formData.iconImage || null,
       price: parseFloat(formData.price.toString()) || 0,
@@ -98,14 +126,14 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
       renew_date: formData.renewDate,
       start_date: formData.startDate || new Date().toISOString().split('T')[0],
       payment_date: formData.paymentDate ? parseInt(formData.paymentDate) : null,
-      payment_card: formData.paymentCard || null,
-      url: formData.url || null,
+      payment_card: formData.paymentCard?.trim() || null,
+      url: formData.url?.trim() || null,
       color: formData.color || '#3B82F6',
-      category: formData.category || null,
+      category: formData.category?.trim() || null,
       is_active: formData.isActive !== false
     };
     
-    console.log('구독 폼 제출 데이터 (DB 스키마 매핑):', submitData);
+    console.log('구독 폼 제출 데이터 (검증 완료, DB 스키마 매핑):', submitData);
     onSubmit(submitData);
   };
 

@@ -682,6 +682,23 @@ const SubscriptionApp = () => {
     console.log('Supabase 클라이언트:', !!supabase);
     console.log('네트워크 상태:', navigator.onLine);
     
+    // 필수 필드 검증
+    if (!formData.name || !formData.price || !formData.renew_date) {
+      console.error('필수 필드 누락:', { name: formData.name, price: formData.price, renew_date: formData.renew_date });
+      alert('필수 정보가 누락되었습니다. 서비스명, 가격, 갱신일을 모두 입력해주세요.');
+      return;
+    }
+
+    // 중복 구독 검사
+    const existingSubscription = subscriptions.find(sub => 
+      sub.name.toLowerCase() === formData.name.toLowerCase()
+    );
+    if (existingSubscription) {
+      console.error('중복 구독 발견:', existingSubscription);
+      alert(`"${formData.name}" 구독이 이미 존재합니다. 다른 이름을 사용해주세요.`);
+      return;
+    }
+    
     // 로딩 상태 설정
     setIsAddingSubscription(true);
     
@@ -705,23 +722,38 @@ const SubscriptionApp = () => {
       }
       console.log('Supabase 연결 테스트 성공');
 
-      // 삽입할 데이터 준비 (DB 스키마에 맞게 변환)
+      // 삽입할 데이터 준비 (DB 스키마에 맞게 변환 및 타입 검증)
       const insertData = {
         user_id: user.id,
-        name: formData.name,
-        icon: formData.icon || '📱',
-        icon_image_url: formData.iconImage || null,
-        price: formData.price,
-        currency: formData.currency,
-        renew_date: formData.renew_date,
-        start_date: formData.start_date || new Date().toISOString().split('T')[0],
-        payment_date: formData.payment_date,
-        payment_card: formData.payment_card || null,
-        url: formData.url || null,
-        color: formData.color || '#3B82F6',
-        category: formData.category || null,
-        is_active: formData.is_active !== false
+        name: String(formData.name).trim(),
+        icon: String(formData.icon || '📱'),
+        icon_image_url: formData.iconImage ? String(formData.iconImage) : null,
+        price: parseFloat(String(formData.price)) || 0,
+        currency: String(formData.currency || 'KRW'),
+        renew_date: String(formData.renew_date),
+        start_date: String(formData.start_date || new Date().toISOString().split('T')[0]),
+        payment_date: formData.payment_date ? parseInt(String(formData.payment_date)) : null,
+        payment_card: formData.payment_card ? String(formData.payment_card).trim() : null,
+        url: formData.url ? String(formData.url).trim() : null,
+        color: String(formData.color || '#3B82F6'),
+        category: formData.category ? String(formData.category).trim() : null,
+        is_active: Boolean(formData.is_active !== false)
       };
+
+      // 추가 데이터 검증
+      if (insertData.price <= 0) {
+        console.error('잘못된 가격:', insertData.price);
+        alert('가격은 0보다 큰 값이어야 합니다.');
+        setIsAddingSubscription(false);
+        return;
+      }
+
+      if (insertData.payment_date && (insertData.payment_date < 1 || insertData.payment_date > 31)) {
+        console.error('잘못된 결제일:', insertData.payment_date);
+        alert('결제일은 1일부터 31일 사이여야 합니다.');
+        setIsAddingSubscription(false);
+        return;
+      }
 
       console.log('=== 삽입할 데이터 준비 완료 ===');
       console.log('삽입할 데이터:', JSON.stringify(insertData, null, 2));
@@ -751,14 +783,20 @@ const SubscriptionApp = () => {
         let userFriendlyMessage = '구독 추가 중 오류가 발생했습니다.';
         
         if (error.message) {
-          if (error.message.includes('duplicate key')) {
-            userFriendlyMessage = '이미 동일한 구독이 존재합니다.';
+          if (error.message.includes('duplicate key') || error.message.includes('subscriptions_user_name_unique')) {
+            userFriendlyMessage = `"${insertData.name}" 구독이 이미 존재합니다. 다른 이름을 사용하거나 기존 구독을 수정해주세요.`;
           } else if (error.message.includes('foreign key')) {
             userFriendlyMessage = '사용자 정보가 올바르지 않습니다. 다시 로그인해주세요.';
-          } else if (error.message.includes('network')) {
+          } else if (error.message.includes('check constraint') && error.message.includes('price')) {
+            userFriendlyMessage = '가격은 0 이상의 값이어야 합니다.';
+          } else if (error.message.includes('check constraint') && error.message.includes('payment_date')) {
+            userFriendlyMessage = '결제일은 1일부터 31일 사이여야 합니다.';
+          } else if (error.message.includes('network') || error.message.includes('fetch')) {
             userFriendlyMessage = '네트워크 연결을 확인해주세요.';
           } else if (error.message.includes('timeout')) {
             userFriendlyMessage = '요청 시간이 초과되었습니다. 다시 시도해주세요.';
+          } else if (error.message.includes('not-null constraint')) {
+            userFriendlyMessage = '필수 정보가 누락되었습니다. 모든 필수 항목을 입력해주세요.';
           } else {
             userFriendlyMessage = `구독 추가 중 오류가 발생했습니다: ${error.message}`;
           }
@@ -800,17 +838,20 @@ const SubscriptionApp = () => {
       
       // 알림과 알람 히스토리 추가
       try {
-        await addNotification('success', '구독 추가 완료', `${formData.name} 구독이 성공적으로 추가되었습니다.`);
-        await addAlarmHistory('subscription_added', '구독이 추가되었습니다', formData.name, data.id);
+        await addNotification('success', '구독 추가 완료', `${insertData.name} 구독이 성공적으로 추가되었습니다.`);
+        await addAlarmHistory('subscription_added', '구독이 추가되었습니다', insertData.name, data.id);
       } catch (error) {
         console.error('알림/알람 히스토리 추가 오류:', error);
       }
+
+      // 성공 알림 표시
+      alert(`✅ "${insertData.name}" 구독이 성공적으로 추가되었습니다!`);
 
       // 성공 시 메인 화면으로 이동
       setCurrentScreen('main');
       setEditingSubscription(null);
       resetForm();
-      console.log('구독 추가 프로세스 완료');
+      console.log('=== 구독 추가 프로세스 완료 ===');
       
     } catch (error) {
       console.error('구독 추가 중 예외 발생:', error);
@@ -1529,10 +1570,51 @@ const SubscriptionApp = () => {
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
+  // 18. 구독 추가 디버그 함수
+  const debugSubscriptionAdd = async () => {
+    console.log('=== 구독 추가 디버그 정보 ===');
+    console.log('현재 사용자:', user?.id);
+    console.log('Supabase 클라이언트:', !!supabase);
+    console.log('현재 구독 목록:', subscriptions.length);
+    console.log('isAddingSubscription:', isAddingSubscription);
+    console.log('네트워크 상태:', navigator.onLine);
+    
+    // Supabase 연결 테스트
+    try {
+      const connectionResult = await testSupabaseConnection();
+      console.log('Supabase 연결 테스트 결과:', connectionResult);
+    } catch (error) {
+      console.error('Supabase 연결 테스트 오류:', error);
+    }
+
+    // 테스트 구독 추가
+    const testData = {
+      name: `테스트 구독 ${Date.now()}`, // 중복 방지를 위해 타임스탬프 추가
+      icon: '🧪',
+      price: 9900,
+      currency: 'KRW',
+      renew_date: '2024-03-15',
+      start_date: '2024-02-15',
+      payment_date: 15,
+      category: 'testing',
+      color: '#10B981'
+    };
+    
+    console.log('=== 테스트 구독 추가 시작 ===');
+    console.log('테스트 데이터:', testData);
+    await handleAddSubscriptionWithForm(testData);
+  };
+
   // 컴포넌트 마운트 시 오디오 초기화 및 자동 재생
   useEffect(() => {
     if (isLoggedIn) {
       initializeAudio();
+      
+      // 개발환경에서 디버그 함수를 전역으로 노출
+      if (process.env.NODE_ENV === 'development') {
+        (window as any).debugSubscriptionAdd = debugSubscriptionAdd;
+        console.log('🔧 디버그 모드: window.debugSubscriptionAdd() 함수가 사용 가능합니다.');
+      }
       
       // 자동 재생 시도 (브라우저 정책으로 인해 사용자 상호작용 후에만 작동)
       const attemptAutoPlay = async () => {
@@ -1947,6 +2029,19 @@ const SubscriptionApp = () => {
 
       {/* 오른쪽 하단 고정 버튼들 */}
       <div className="fixed bottom-20 right-4 flex flex-col gap-3 z-40">
+        
+        {/* 개발 환경에서만 보이는 디버그 버튼 */}
+        {process.env.NODE_ENV === 'development' && (
+          <Button
+            onClick={debugSubscriptionAdd}
+            variant="outline"
+            size="icon"
+            className="w-12 h-12 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-500"
+            title="구독 추가 디버그 테스트"
+          >
+            🔧
+          </Button>
+        )}
         
         {/* 구독 추가 버튼 */}
         <Button
