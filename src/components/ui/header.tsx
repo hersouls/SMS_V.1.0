@@ -42,7 +42,7 @@ const Header: React.FC<HeaderProps> = ({
             variant="ghost"
             className="flex items-center gap-2 lg:gap-3 w-12 h-12 md:w-14 md:h-14 lg:w-auto lg:h-16 lg:px-6 bg-white/20 rounded-full hover:bg-white/40 focus:bg-white/40 transition-all duration-200 backdrop-blur-sm border border-white/20 hover:border-white/40 focus:border-white/40 active:scale-95 hover:scale-105 focus:scale-105 pointer-events-auto cursor-pointer shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-white/50"
           >
-            <Home className="w-5 h-5 md:w-6 md:h-6 lg:w-7 lg:h-7 text-white" />
+            <Home className="w-6 h-6 text-white" />
             <span className="hidden lg:inline text-white font-medium text-lg">홈</span>
           </Button>
         </div>
@@ -60,7 +60,7 @@ const Header: React.FC<HeaderProps> = ({
               variant="ghost"
               className="flex items-center gap-2 lg:gap-3 w-12 h-12 md:w-14 md:h-14 lg:w-auto lg:h-16 lg:px-6 bg-white/20 rounded-full hover:bg-white/40 focus:bg-white/40 transition-all duration-200 backdrop-blur-sm border border-white/20 hover:border-white/40 focus:border-white/40 active:scale-95 hover:scale-105 focus:scale-105 pointer-events-auto cursor-pointer shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-white/50"
             >
-              <Bell className="w-5 h-5 md:w-6 md:h-6 lg:w-7 lg:h-7 text-white" />
+              <Bell className="w-6 h-6 text-white" />
               <span className="hidden lg:inline text-white font-medium text-lg">알림</span>
             </Button>
             {notificationCount > 0 && (
@@ -84,14 +84,14 @@ const Header: React.FC<HeaderProps> = ({
             className="flex items-center gap-2 lg:gap-3 w-12 h-12 md:w-14 md:h-14 lg:w-auto lg:h-16 lg:px-6 bg-white/20 rounded-full hover:bg-white/40 focus:bg-white/40 transition-all duration-200 backdrop-blur-sm border border-white/20 hover:border-white/40 focus:border-white/40 overflow-hidden active:scale-95 hover:scale-105 focus:scale-105 pointer-events-auto cursor-pointer shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-white/50"
           >
             {profile?.photo ? (
-              <Avatar className="w-12 h-12 md:w-14 md:h-14 lg:w-16 lg:h-16">
+              <Avatar className="w-14 h-14">
                 <AvatarImage src={profile.photo} alt="프로필 사진" />
                 <AvatarFallback className="bg-white/20 text-white text-sm md:text-base lg:text-lg">
                   {getInitials(`${profile.firstName} ${profile.lastName}`)}
                 </AvatarFallback>
               </Avatar>
             ) : (
-              <User className="w-5 h-5 md:w-6 md:h-6 lg:w-7 lg:h-7 text-white" />
+              <User className="w-6 h-6 text-white" />
             )}
             <span className="hidden lg:inline text-white font-medium text-lg">프로필</span>
           </Button>
