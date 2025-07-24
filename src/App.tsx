@@ -1746,7 +1746,7 @@ const SubscriptionApp = () => {
   // 오디오 플레이어 관련 함수들
   const initializeAudio = () => {
     setIsLoading(true);
-    const audio = new Audio('/Moonwave.mp3');
+    const audio = new Audio('/Moonwave (Remastered).mp3');
     audio.volume = volume;
     audio.muted = isMuted;
     audio.loop = isLooping; // 반복 재생 설정
@@ -1858,7 +1858,7 @@ const SubscriptionApp = () => {
         if (hasAutoPlayed) return;
         
         try {
-          const audio = new Audio('/Moonwave.mp3');
+          const audio = new Audio('/Moonwave (Remastered).mp3');
           audio.volume = volume;
           await audio.play();
           audio.pause();
