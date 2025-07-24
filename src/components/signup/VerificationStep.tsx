@@ -45,8 +45,6 @@ export const VerificationStep: React.FC<VerificationStepProps> = ({
             agree_to_marketing: data.agreeToMarketing,
           },
           emailRedirectTo: process.env.REACT_APP_SUPABASE_AUTH_REDIRECT_URL || `${window.location.origin}/auth/callback`,
-          // 추가 설정
-          shouldCreateUser: true,
         },
       });
 
