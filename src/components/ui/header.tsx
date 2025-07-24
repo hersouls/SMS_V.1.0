@@ -53,6 +53,12 @@ const Header: React.FC<HeaderProps> = ({
           <button className="text-white/80 hover:text-white transition-colors duration-200">구독 관리</button>
           <button className="text-white/80 hover:text-white transition-colors duration-200">통계</button>
           <button className="text-white/80 hover:text-white transition-colors duration-200">설정</button>
+          <a 
+            href="/supabase-test" 
+            className="text-white/80 hover:text-white transition-colors duration-200"
+          >
+            🔧 연결 테스트
+          </a>
         </nav>
         
         {/* 우측 메뉴 */}
