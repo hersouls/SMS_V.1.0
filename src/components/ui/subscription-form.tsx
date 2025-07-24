@@ -87,10 +87,29 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('=== 구독 폼 제출 시작 ===');
+    console.log('원본 폼 데이터:', formData);
+    
+    // 필수 필드 검증
+    if (!formData.name.trim()) {
+      alert('서비스명을 입력해주세요.');
+      return;
+    }
+    
+    if (!formData.renewDate) {
+      alert('갱신일을 선택해주세요.');
+      return;
+    }
+    
+    if (formData.price <= 0) {
+      alert('유효한 가격을 입력해주세요.');
+      return;
+    }
+    
     // Supabase DB 스키마에 맞게 필드명 변환
     const submitData = {
       id: subscription?.id,
-      name: formData.name,
+      name: formData.name.trim(),
       icon: formData.icon,
       icon_image_url: formData.iconImage || null,
       price: parseFloat(formData.price.toString()) || 0,
@@ -105,7 +124,13 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
       is_active: formData.isActive !== false
     };
     
-    console.log('구독 폼 제출 데이터 (DB 스키마 매핑):', submitData);
+    console.log('변환된 제출 데이터 (DB 스키마 매핑):', submitData);
+    console.log('필드 타입 검증:');
+    console.log('- name:', typeof submitData.name, submitData.name);
+    console.log('- price:', typeof submitData.price, submitData.price);
+    console.log('- renew_date:', typeof submitData.renew_date, submitData.renew_date);
+    console.log('- start_date:', typeof submitData.start_date, submitData.start_date);
+    
     onSubmit(submitData);
   };
 

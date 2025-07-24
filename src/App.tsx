@@ -705,12 +705,12 @@ const SubscriptionApp = () => {
       }
       console.log('Supabase 연결 테스트 성공');
 
-      // 삽입할 데이터 준비 (DB 스키마에 맞게 변환)
+      // 삽입할 데이터 준비 (SubscriptionForm에서 이미 DB 스키마에 맞게 변환된 데이터 사용)
       const insertData = {
         user_id: user.id,
         name: formData.name,
         icon: formData.icon || '📱',
-        icon_image_url: formData.iconImage || null,
+        icon_image_url: formData.icon_image_url || null,
         price: formData.price,
         currency: formData.currency,
         renew_date: formData.renew_date,
@@ -854,11 +854,11 @@ const SubscriptionApp = () => {
         return;
       }
 
-      // 업데이트할 데이터 준비
+      // 업데이트할 데이터 준비 (SubscriptionForm에서 이미 DB 스키마에 맞게 변환된 데이터 사용)
       const updateData = {
         name: formData.name,
         icon: formData.icon || '📱',
-        icon_image_url: formData.iconImage || null,
+        icon_image_url: formData.icon_image_url || null,
         price: formData.price,
         currency: formData.currency,
         renew_date: formData.renew_date,
@@ -1974,7 +1974,7 @@ const SubscriptionApp = () => {
           const testData = {
             name: 'Test Service',
             icon: '🧪',
-            iconImage: '',
+            icon_image_url: null,
             price: 1000,
             currency: 'KRW',
             renew_date: new Date().toISOString().split('T')[0],
