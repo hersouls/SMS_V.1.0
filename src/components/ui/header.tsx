@@ -28,35 +28,45 @@ const Header: React.FC<HeaderProps> = ({
   className
 }) => {
   return (
-    <div className={cn("relative px-4 pt-8 pb-8", className)}>
-      <div className="flex justify-between items-center mb-6">
+    <div className={cn("relative px-4 md:px-8 lg:px-12 pt-8 pb-8", className)}>
+      <div className="flex justify-between items-center mb-6 max-w-7xl mx-auto relative z-10">
         {/* 왼쪽: 홈 버튼 */}
         <div className="flex items-center">
           <Button
-            onClick={onHomeClick}
+            onClick={(e) => {
+              console.log('홈 버튼 클릭됨 - Header 컴포넌트');
+              e.preventDefault();
+              e.stopPropagation();
+              onHomeClick();
+            }}
             variant="ghost"
-            size="icon"
-            className="w-12 h-12 bg-white/20 rounded-full hover:bg-white/30 transition-all duration-200 backdrop-blur-sm border border-white/20 hover:border-white/30"
+            className="flex items-center gap-2 lg:gap-3 w-12 h-12 md:w-14 md:h-14 lg:w-auto lg:h-16 lg:px-6 bg-white/20 rounded-full hover:bg-white/40 focus:bg-white/40 transition-all duration-200 backdrop-blur-sm border border-white/20 hover:border-white/40 focus:border-white/40 active:scale-95 hover:scale-105 focus:scale-105 pointer-events-auto cursor-pointer shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-white/50"
           >
-            <Home className="w-5 h-5 text-white" />
+            <Home className="w-5 h-5 md:w-6 md:h-6 lg:w-7 lg:h-7 text-white" />
+            <span className="hidden lg:inline text-white font-medium text-lg">홈</span>
           </Button>
         </div>
         
         {/* 오른쪽: 알림 + 아바타 */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 md:gap-4 lg:gap-5">
           <div className="relative">
             <Button
-              onClick={onNotificationClick}
+              onClick={(e) => {
+                console.log('알람 버튼 클릭됨 - Header 컴포넌트');
+                e.preventDefault();
+                e.stopPropagation();
+                onNotificationClick();
+              }}
               variant="ghost"
-              size="icon"
-              className="w-12 h-12 bg-white/20 rounded-full hover:bg-white/30 transition-all duration-200 backdrop-blur-sm border border-white/20 hover:border-white/30"
+              className="flex items-center gap-2 lg:gap-3 w-12 h-12 md:w-14 md:h-14 lg:w-auto lg:h-16 lg:px-6 bg-white/20 rounded-full hover:bg-white/40 focus:bg-white/40 transition-all duration-200 backdrop-blur-sm border border-white/20 hover:border-white/40 focus:border-white/40 active:scale-95 hover:scale-105 focus:scale-105 pointer-events-auto cursor-pointer shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-white/50"
             >
-              <Bell className="w-5 h-5 text-white" />
+              <Bell className="w-5 h-5 md:w-6 md:h-6 lg:w-7 lg:h-7 text-white" />
+              <span className="hidden lg:inline text-white font-medium text-lg">알림</span>
             </Button>
             {notificationCount > 0 && (
               <Badge 
                 variant="destructive" 
-                className="absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center p-0 text-xs font-bold border-2 border-white"
+                className="absolute -top-2 -right-2 md:-top-3 md:-right-3 lg:-top-2 lg:-right-2 w-6 h-6 md:w-7 md:h-7 lg:w-8 lg:h-8 rounded-full flex items-center justify-center p-0 text-xs md:text-sm font-bold border-2 border-white z-10"
               >
                 {notificationCount > 99 ? '99+' : notificationCount}
               </Badge>
@@ -64,21 +74,26 @@ const Header: React.FC<HeaderProps> = ({
           </div>
           
           <Button
-            onClick={onProfileClick}
+            onClick={(e) => {
+              console.log('아바타 버튼 클릭됨 - Header 컴포넌트');
+              e.preventDefault();
+              e.stopPropagation();
+              onProfileClick();
+            }}
             variant="ghost"
-            size="icon"
-            className="w-12 h-12 bg-white/20 rounded-full hover:bg-white/30 transition-all duration-200 backdrop-blur-sm border border-white/20 hover:border-white/30 overflow-hidden"
+            className="flex items-center gap-2 lg:gap-3 w-12 h-12 md:w-14 md:h-14 lg:w-auto lg:h-16 lg:px-6 bg-white/20 rounded-full hover:bg-white/40 focus:bg-white/40 transition-all duration-200 backdrop-blur-sm border border-white/20 hover:border-white/40 focus:border-white/40 overflow-hidden active:scale-95 hover:scale-105 focus:scale-105 pointer-events-auto cursor-pointer shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-white/50"
           >
             {profile?.photo ? (
-              <Avatar className="w-full h-full">
+              <Avatar className="w-12 h-12 md:w-14 md:h-14 lg:w-16 lg:h-16">
                 <AvatarImage src={profile.photo} alt="프로필 사진" />
-                <AvatarFallback className="bg-white/20 text-white">
+                <AvatarFallback className="bg-white/20 text-white text-sm md:text-base lg:text-lg">
                   {getInitials(`${profile.firstName} ${profile.lastName}`)}
                 </AvatarFallback>
               </Avatar>
             ) : (
-              <User className="w-5 h-5 text-white" />
+              <User className="w-5 h-5 md:w-6 md:h-6 lg:w-7 lg:h-7 text-white" />
             )}
+            <span className="hidden lg:inline text-white font-medium text-lg">프로필</span>
           </Button>
         </div>
       </div>
