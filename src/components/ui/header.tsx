@@ -47,13 +47,7 @@ const Header: React.FC<HeaderProps> = ({
           </Button>
         </div>
         
-        {/* 중앙 네비게이션 - 태블릿에서는 숨김 */}
-        <nav className="hidden lg:flex gap-6">
-          <button className="text-white/80 hover:text-white transition-colors duration-200">대시보드</button>
-          <button className="text-white/80 hover:text-white transition-colors duration-200">구독 관리</button>
-          <button className="text-white/80 hover:text-white transition-colors duration-200">통계</button>
-          <button className="text-white/80 hover:text-white transition-colors duration-200">설정</button>
-        </nav>
+
         
         {/* 우측 메뉴 */}
         <div className="flex items-center gap-2 lg:gap-4">
@@ -111,15 +105,7 @@ const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* 태블릿용 드롭다운 네비게이션 */}
-      <nav className="md:block lg:hidden mt-4 border-t border-blue-600 pt-4">
-        <div className="flex gap-4 overflow-x-auto">
-          <button className="whitespace-nowrap px-3 py-2 text-sm text-white/80 hover:text-white transition-colors duration-200">대시보드</button>
-          <button className="whitespace-nowrap px-3 py-2 text-sm text-white/80 hover:text-white transition-colors duration-200">구독 관리</button>
-          <button className="whitespace-nowrap px-3 py-2 text-sm text-white/80 hover:text-white transition-colors duration-200">통계</button>
-          <button className="whitespace-nowrap px-3 py-2 text-sm text-white/80 hover:text-white transition-colors duration-200">설정</button>
-        </div>
-      </nav>
+
 
       {/* 웨이브 효과 */}
       <div className="absolute bottom-0 left-0 right-0">
