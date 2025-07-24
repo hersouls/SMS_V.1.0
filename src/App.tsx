@@ -1957,7 +1957,7 @@ const SubscriptionApp = () => {
         <CommonHeader />
 
         {/* 메인 콘텐츠 */}
-        <div className="bg-gray-50 rounded-t-3xl px-4 pt-8 pb-24 min-h-[70vh] -mt-4 relative z-10">
+        <div className="bg-gray-50 rounded-t-3xl px-4 pt-8 pb-24 min-h-[70vh] -mt-4 relative z-0">
           {/* 통계 카드 섹션 */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             <StatsCard
