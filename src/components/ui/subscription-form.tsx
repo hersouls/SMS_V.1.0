@@ -86,10 +86,24 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit({
+    
+    // 데이터 타입 변환 및 필드명 매핑
+    const submitData = {
       ...formData,
-      id: subscription?.id
-    });
+      id: subscription?.id,
+      // Supabase DB 스키마에 맞게 필드명 변환
+      user_id: undefined, // App.tsx에서 설정
+      price: parseFloat(formData.price.toString()) || 0,
+      renew_date: formData.renewDate,
+      start_date: formData.startDate,
+      payment_date: formData.paymentDate ? parseInt(formData.paymentDate) : null,
+      payment_card: formData.paymentCard,
+      icon_image_url: formData.iconImage,
+      is_active: formData.isActive
+    };
+    
+    console.log('구독 폼 제출 데이터:', submitData);
+    onSubmit(submitData);
   };
 
   const currencyOptions = [

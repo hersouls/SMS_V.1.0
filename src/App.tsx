@@ -15,6 +15,8 @@ import { AuthCallback } from './components/AuthCallback';
 import Header from './components/ui/header';
 import StatsCard from './components/ui/stats-card';
 import SubscriptionCard from './components/ui/subscription-card';
+import SubscriptionForm from './components/ui/subscription-form';
+import DebugPanel from './components/DebugPanel';
 import { Button } from './components/ui/button';
 
 
@@ -659,6 +661,280 @@ const SubscriptionApp = () => {
   };
 
   // 15. Supabase 구독 추가
+  // 새로운 구독 추가 함수 (SubscriptionForm과 호환)
+  const handleAddSubscriptionWithForm = async (formData: any) => {
+    if (!user || isAddingSubscription) return;
+    
+    console.log('=== 구독 추가 프로세스 시작 ===');
+    console.log('사용자 ID:', user.id);
+    console.log('폼 데이터:', formData);
+    console.log('Supabase 클라이언트:', !!supabase);
+    console.log('네트워크 상태:', navigator.onLine);
+    
+    // 로딩 상태 설정
+    setIsAddingSubscription(true);
+    
+    try {
+      // 네트워크 상태 확인
+      if (!navigator.onLine) {
+        console.error('네트워크 연결이 없습니다');
+        alert('인터넷 연결을 확인해주세요.');
+        setIsAddingSubscription(false);
+        return;
+      }
+
+      // Supabase 연결 테스트
+      console.log('Supabase 연결 테스트 시작...');
+      const connectionTest = await testSupabaseConnection();
+      if (!connectionTest) {
+        console.error('Supabase 연결 테스트 실패');
+        alert('데이터베이스에 연결할 수 없습니다. 네트워크 연결을 확인해주세요.');
+        setIsAddingSubscription(false);
+        return;
+      }
+      console.log('Supabase 연결 테스트 성공');
+
+      // 삽입할 데이터 준비 (DB 스키마에 맞게 변환)
+      const insertData = {
+        user_id: user.id,
+        name: formData.name,
+        icon: formData.icon || '📱',
+        icon_image_url: formData.iconImage || null,
+        price: formData.price,
+        currency: formData.currency,
+        renew_date: formData.renew_date,
+        start_date: formData.start_date || new Date().toISOString().split('T')[0],
+        payment_date: formData.payment_date,
+        payment_card: formData.payment_card || null,
+        url: formData.url || null,
+        color: formData.color || '#3B82F6',
+        category: formData.category || null,
+        is_active: formData.is_active !== false
+      };
+
+      console.log('=== 삽입할 데이터 준비 완료 ===');
+      console.log('삽입할 데이터:', JSON.stringify(insertData, null, 2));
+      console.log('데이터 타입 검증:');
+      console.log('- user_id (string):', typeof insertData.user_id, insertData.user_id);
+      console.log('- name (string):', typeof insertData.name, insertData.name);
+      console.log('- price (number):', typeof insertData.price, insertData.price);
+      console.log('- currency (string):', typeof insertData.currency, insertData.currency);
+      console.log('- renew_date (string):', typeof insertData.renew_date, insertData.renew_date);
+
+      console.log('=== Supabase 쿼리 실행 시작 ===');
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .insert(insertData)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('=== Supabase 구독 추가 오류 발생 ===');
+        console.error('에러 객체:', error);
+        console.error('에러 메시지:', error.message);
+        console.error('에러 코드:', error.code);
+        console.error('에러 상세:', error.details);
+        console.error('에러 힌트:', error.hint);
+        console.error('전체 에러 정보:', JSON.stringify(error, null, 2));
+        
+        let userFriendlyMessage = '구독 추가 중 오류가 발생했습니다.';
+        
+        if (error.message) {
+          if (error.message.includes('duplicate key')) {
+            userFriendlyMessage = '이미 동일한 구독이 존재합니다.';
+          } else if (error.message.includes('foreign key')) {
+            userFriendlyMessage = '사용자 정보가 올바르지 않습니다. 다시 로그인해주세요.';
+          } else if (error.message.includes('network')) {
+            userFriendlyMessage = '네트워크 연결을 확인해주세요.';
+          } else if (error.message.includes('timeout')) {
+            userFriendlyMessage = '요청 시간이 초과되었습니다. 다시 시도해주세요.';
+          } else {
+            userFriendlyMessage = `구독 추가 중 오류가 발생했습니다: ${error.message}`;
+          }
+        }
+        
+        alert(`구독 추가 실패: ${userFriendlyMessage}`);
+        try {
+          await addNotification('error', '구독 추가 실패', userFriendlyMessage);
+        } catch (notificationError) {
+          console.error('알림 추가 오류:', notificationError);
+        }
+        setIsAddingSubscription(false);
+        return;
+      }
+
+      console.log('=== 구독 추가 성공 ===');
+      console.log('반환된 데이터:', JSON.stringify(data, null, 2));
+      
+      const localSubscription: Subscription = {
+        id: Date.now(),
+        databaseId: data.id,
+        name: data.name,
+        icon: data.icon || '📱',
+        iconImage: data.icon_image_url,
+        price: data.price,
+        currency: data.currency as 'KRW' | 'USD' | 'EUR' | 'JPY',
+        renewDate: data.renew_date,
+        startDate: data.start_date || '',
+        paymentDate: data.payment_date?.toString() || '',
+        paymentCard: data.payment_card || '',
+        url: data.url || '',
+        color: data.color || '#3B82F6',
+        category: data.category || ''
+      };
+
+      console.log('=== 로컬 구독 객체 생성 완료 ===');
+      console.log('로컬 구독 객체:', JSON.stringify(localSubscription, null, 2));
+      setSubscriptions(prev => [localSubscription, ...prev]);
+      
+      // 알림과 알람 히스토리 추가
+      try {
+        await addNotification('success', '구독 추가 완료', `${formData.name} 구독이 성공적으로 추가되었습니다.`);
+        await addAlarmHistory('subscription_added', '구독이 추가되었습니다', formData.name, data.id);
+      } catch (error) {
+        console.error('알림/알람 히스토리 추가 오류:', error);
+      }
+
+      // 성공 시 메인 화면으로 이동
+      setCurrentScreen('main');
+      setEditingSubscription(null);
+      resetForm();
+      console.log('구독 추가 프로세스 완료');
+      
+    } catch (error) {
+      console.error('구독 추가 중 예외 발생:', error);
+      const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
+      alert(`구독 추가 실패: ${errorMessage}`);
+      
+      try {
+        await addNotification('error', '구독 추가 실패', `구독 추가 중 오류가 발생했습니다: ${errorMessage}`);
+      } catch (notificationError) {
+        console.error('알림 추가 오류:', notificationError);
+      }
+    } finally {
+      setIsAddingSubscription(false);
+    }
+  };
+
+  // 새로운 구독 수정 함수 (SubscriptionForm과 호환)
+  const handleUpdateSubscriptionWithForm = async (formData: any) => {
+    if (!user || !editingSubscription || isAddingSubscription) return;
+    
+    console.log('새로운 구독 수정 시작:', formData);
+    
+    // 로딩 상태 설정
+    setIsAddingSubscription(true);
+    
+    try {
+      // 네트워크 상태 확인
+      if (!navigator.onLine) {
+        console.error('네트워크 연결이 없습니다');
+        alert('인터넷 연결을 확인해주세요.');
+        setIsAddingSubscription(false);
+        return;
+      }
+
+      // Supabase 연결 테스트
+      const connectionTest = await testSupabaseConnection();
+      if (!connectionTest) {
+        console.error('Supabase 연결 테스트 실패');
+        alert('데이터베이스에 연결할 수 없습니다. 네트워크 연결을 확인해주세요.');
+        setIsAddingSubscription(false);
+        return;
+      }
+
+      // 업데이트할 데이터 준비
+      const updateData = {
+        name: formData.name,
+        icon: formData.icon || '📱',
+        icon_image_url: formData.iconImage || null,
+        price: formData.price,
+        currency: formData.currency,
+        renew_date: formData.renew_date,
+        start_date: formData.start_date,
+        payment_date: formData.payment_date,
+        payment_card: formData.payment_card || null,
+        url: formData.url || null,
+        color: formData.color || '#3B82F6',
+        category: formData.category || null,
+        is_active: formData.is_active !== false
+      };
+
+      console.log('업데이트할 데이터:', updateData);
+
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .update(updateData)
+        .eq('id', editingSubscription.databaseId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Supabase 구독 수정 오류:', error);
+        alert(`구독 수정 실패: ${error.message}`);
+        try {
+          await addNotification('error', '구독 수정 실패', error.message);
+        } catch (notificationError) {
+          console.error('알림 추가 오류:', notificationError);
+        }
+        setIsAddingSubscription(false);
+        return;
+      }
+
+      console.log('구독 수정 성공:', data);
+      
+      // 로컬 상태 업데이트
+      const updatedSubscription: Subscription = {
+        ...editingSubscription,
+        name: data.name,
+        icon: data.icon || '📱',
+        iconImage: data.icon_image_url,
+        price: data.price,
+        currency: data.currency as 'KRW' | 'USD' | 'EUR' | 'JPY',
+        renewDate: data.renew_date,
+        startDate: data.start_date || '',
+        paymentDate: data.payment_date?.toString() || '',
+        paymentCard: data.payment_card || '',
+        url: data.url || '',
+        color: data.color || '#3B82F6',
+        category: data.category || ''
+      };
+
+      setSubscriptions(prev => 
+        prev.map(sub => 
+          sub.id === editingSubscription.id ? updatedSubscription : sub
+        )
+      );
+      
+      // 알림과 알람 히스토리 추가
+      try {
+        await addNotification('success', '구독 수정 완료', `${formData.name} 구독이 성공적으로 수정되었습니다.`);
+        await addAlarmHistory('subscription_updated', '구독이 수정되었습니다', formData.name, data.id);
+      } catch (error) {
+        console.error('알림/알람 히스토리 추가 오류:', error);
+      }
+
+      // 성공 시 메인 화면으로 이동
+      setCurrentScreen('main');
+      setEditingSubscription(null);
+      resetForm();
+      console.log('구독 수정 프로세스 완료');
+      
+    } catch (error) {
+      console.error('구독 수정 중 예외 발생:', error);
+      const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
+      alert(`구독 수정 실패: ${errorMessage}`);
+      
+      try {
+        await addNotification('error', '구독 수정 실패', `구독 수정 중 오류가 발생했습니다: ${errorMessage}`);
+      } catch (notificationError) {
+        console.error('알림 추가 오류:', notificationError);
+      }
+    } finally {
+      setIsAddingSubscription(false);
+    }
+  };
+
   const handleAddSubscription = async () => {
     if (!customService.name || !customService.price || !user || isAddingSubscription) return;
     
@@ -1739,6 +2015,38 @@ const SubscriptionApp = () => {
           <Plus className="w-6 h-6" />
         </Button>
       </div>
+
+      {/* 디버그 패널 */}
+      <DebugPanel
+        onTestConnection={async () => {
+          console.log('=== 디버그: DB 연결 테스트 시작 ===');
+          const result = await testSupabaseConnection();
+          console.log('DB 연결 테스트 결과:', result);
+        }}
+        onTestSubscription={async () => {
+          console.log('=== 디버그: 테스트 구독 추가 시작 ===');
+          const testData = {
+            name: 'Test Service',
+            icon: '🧪',
+            iconImage: '',
+            price: 1000,
+            currency: 'KRW',
+            renew_date: new Date().toISOString().split('T')[0],
+            start_date: new Date().toISOString().split('T')[0],
+            payment_date: 15,
+            payment_card: 'Test Card',
+            url: 'https://example.com',
+            color: '#FF6B6B',
+            category: 'test',
+            is_active: true
+          };
+          await handleAddSubscriptionWithForm(testData);
+        }}
+        onClearLogs={() => {
+          console.clear();
+          console.log('=== 콘솔 로그가 지워졌습니다 ===');
+        }}
+      />
       </>
     );
   }
@@ -2392,112 +2700,47 @@ const SubscriptionApp = () => {
       {/* 헤더 영역 */}
       <CommonHeader />
       
-      {/* 페이지 제목 */}
-      <div className="px-4 mb-6">
-        <h1 className="text-white text-2xl font-bold tracking-tight">
-          {editingSubscription ? '구독 수정' : '구독 추가'}
-        </h1>
-      </div>
-
       {/* 메인 콘텐츠 */}
       <div className="bg-gray-50 rounded-t-3xl px-4 pt-6 pb-24 min-h-[75vh] -mt-4 relative z-10">
-        {/* 구독 정보 입력 폼 */}
-        <div className="bg-white rounded-2xl p-6 shadow-md mb-6">
-          <h3 className="text-lg font-bold text-gray-900 mb-4">구독 정보</h3>
-          
-          <div className="space-y-4">
-            {/* 아이콘 이미지 업로드 */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Image className="w-4 h-4 inline mr-1" />
-                서비스 아이콘
-              </label>
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-xl flex items-center justify-center text-2xl font-bold text-white shadow-sm overflow-hidden bg-gray-200">
-                  {customService.iconImage ? (
-                    <img 
-                      src={customService.iconImage} 
-                      alt="서비스 아이콘"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    '📱'
-                  )}
-                </div>
-                <div className="flex-1">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    className="hidden"
-                    id="icon-upload"
-                  />
-                  <label
-                    htmlFor="icon-upload"
-                    className="block w-full px-4 py-3 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-xl border-2 border-dashed border-blue-300 text-center cursor-pointer transition-colors duration-200"
-                  >
-                    <Upload className="w-4 h-4 inline mr-1" />
-                    이미지 업로드
-                  </label>
-                  <p className="text-xs text-gray-500 mt-1 text-center">
-                    권장: 128×128px
-                  </p>
-                </div>
-
-                {customService.iconImage && (
-                  <button
-                    onClick={removeImage}
-                    className="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-sm font-medium transition-colors duration-200"
-                  >
-                    제거
-                  </button>
-                )}
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Tag className="w-4 h-4 inline mr-1" />
-                서비스 이름
-              </label>
-              <input
-                type="text"
-                value={customService.name}
-                onChange={(e) => handleCustomInput('name', e.target.value)}
-                className="w-full px-4 py-3 bg-gray-50 rounded-xl border-0 focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-900"
-                placeholder="서비스 이름을 입력하세요"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Banknote className="w-4 h-4 inline mr-1" />
-                월 구독료
-              </label>
-              <div className="flex gap-3">
-                <select
-                  value={customService.currency}
-                  onChange={(e) => handleCustomInput('currency', e.target.value)}
-                  className="w-1/3 px-4 py-3 bg-gray-50 rounded-xl border-0 focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-900"
-                >
-                  <option value="USD">달러</option>
-                  <option value="KRW">원화</option>
-                </select>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={customService.price}
-                  onChange={(e) => handleCustomInput('price', e.target.value)}
-                  className="flex-1 px-4 py-3 bg-gray-50 rounded-xl border-0 focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-900 text-right"
-                  placeholder="0.00"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <CalendarRange className="w-4 h-4 inline mr-1" />
-                구독 갱신일
+        {/* 새로운 구독 폼 컴포넌트 사용 */}
+        <SubscriptionForm
+          subscription={editingSubscription ? {
+            id: editingSubscription.id,
+            name: editingSubscription.name,
+            icon: editingSubscription.icon,
+            iconImage: editingSubscription.iconImage,
+            price: editingSubscription.price,
+            currency: editingSubscription.currency,
+            renewDate: editingSubscription.renewDate,
+            startDate: editingSubscription.startDate,
+            paymentDate: editingSubscription.paymentDate,
+            paymentCard: editingSubscription.paymentCard,
+            url: editingSubscription.url,
+            color: editingSubscription.color,
+            category: editingSubscription.category,
+            isActive: editingSubscription.isActive
+          } : undefined}
+          onSubmit={async (formData) => {
+            console.log('구독 폼 제출:', formData);
+            
+            if (editingSubscription) {
+              // 구독 수정 로직
+              await handleUpdateSubscriptionWithForm(formData);
+            } else {
+              // 구독 추가 로직
+              await handleAddSubscriptionWithForm(formData);
+            }
+          }}
+          onCancel={() => {
+            setCurrentScreen('main');
+            setEditingSubscription(null);
+            resetForm();
+          }}
+          isLoading={isAddingSubscription}
+        />
+      </div>
+    </div>
+  );
               </label>
               <input
                 type="date"
