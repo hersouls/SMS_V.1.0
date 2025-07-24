@@ -126,7 +126,7 @@ export const EnhancedSubscriptionApp: React.FC = () => {
     return await performanceMonitor.measureOperation('addSubscription', async () => {
       try {
         // Enhanced validation
-        const validation = validateSubscriptionFormEnhanced(formData, subscriptions.map(s => ({ id: s.databaseId, name: s.name })));
+        const validation = validateSubscriptionFormEnhanced(formData, subscriptions.filter(s => s.databaseId).map(s => ({ id: s.databaseId!, name: s.name })));
         
         if (!validation.isValid) {
           const errorMessages = Object.values(validation.errors).join(', ');
@@ -171,7 +171,7 @@ export const EnhancedSubscriptionApp: React.FC = () => {
         // Enhanced validation
         const validation = validateSubscriptionFormEnhanced(
           formData, 
-          subscriptions.map(s => ({ id: s.databaseId, name: s.name })),
+          subscriptions.filter(s => s.databaseId).map(s => ({ id: s.databaseId!, name: s.name })),
           subscription.databaseId
         );
         
@@ -483,7 +483,7 @@ export const EnhancedSubscriptionApp: React.FC = () => {
               setEditingSubscription(null);
               setCurrentScreen('main');
             }}
-            existingSubscriptions={subscriptions.map(s => ({ id: s.databaseId, name: s.name }))}
+            existingSubscriptions={subscriptions.filter(s => s.databaseId).map(s => ({ id: s.databaseId!, name: s.name }))}
             isEditing={currentScreen === 'edit'}
             editingId={editingSubscription ? subscriptions.find(s => s.id === editingSubscription)?.databaseId : undefined}
           />
