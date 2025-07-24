@@ -3,7 +3,7 @@ import { Button } from './button';
 import { Avatar, AvatarFallback, AvatarImage } from './avatar';
 import { Badge } from './badge';
 import { cn, getInitials } from '../../lib/utils';
-import { Home, Bell, User } from 'lucide-react';
+import { Home, Bell, User, Menu } from 'lucide-react';
 
 interface HeaderProps {
   onHomeClick: () => void;
@@ -28,10 +28,10 @@ const Header: React.FC<HeaderProps> = ({
   className
 }) => {
   return (
-    <div className={cn("relative px-4 md:px-8 lg:px-12 pt-8 pb-8", className)}>
-      <div className="flex justify-between items-center mb-6 max-w-7xl mx-auto relative z-10">
-        {/* 왼쪽: 홈 버튼 */}
-        <div className="flex items-center">
+    <div className={cn("relative px-4 lg:px-6 xl:px-8 pt-8 pb-8", className)}>
+      <div className="flex items-center justify-between mb-6 max-w-7xl mx-auto relative z-10">
+        {/* 로고 - 모든 화면에서 보임 */}
+        <div className="flex items-center gap-2">
           <Button
             onClick={(e) => {
               console.log('홈 버튼 클릭됨 - Header 컴포넌트');
@@ -42,13 +42,26 @@ const Header: React.FC<HeaderProps> = ({
             variant="ghost"
             className="flex items-center gap-2 lg:gap-3 w-12 h-12 md:w-14 md:h-14 lg:w-auto lg:h-16 lg:px-6 bg-white/20 rounded-full hover:bg-white/40 focus:bg-white/40 transition-all duration-200 backdrop-blur-sm border border-white/20 hover:border-white/40 focus:border-white/40 active:scale-95 hover:scale-105 focus:scale-105 pointer-events-auto cursor-pointer shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-white/50"
           >
-            <Home className="w-6 h-6 text-white" />
+            <Home className="w-5 h-5 lg:w-6 lg:h-6 text-white" />
             <span className="hidden lg:inline text-white font-medium text-lg">홈</span>
           </Button>
         </div>
         
-        {/* 오른쪽: 알림 + 아바타 */}
-        <div className="flex items-center gap-3 md:gap-4 lg:gap-5">
+        {/* 중앙 네비게이션 - 태블릿에서는 숨김 */}
+        <nav className="hidden lg:flex gap-6">
+          <button className="text-white/80 hover:text-white transition-colors duration-200">대시보드</button>
+          <button className="text-white/80 hover:text-white transition-colors duration-200">구독 관리</button>
+          <button className="text-white/80 hover:text-white transition-colors duration-200">통계</button>
+          <button className="text-white/80 hover:text-white transition-colors duration-200">설정</button>
+        </nav>
+        
+        {/* 우측 메뉴 */}
+        <div className="flex items-center gap-2 lg:gap-4">
+          {/* 태블릿에서는 햄버거 메뉴 표시 */}
+          <button className="md:hidden w-12 h-12 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/40 transition-colors duration-200">
+            <Menu className="w-5 h-5 text-white" />
+          </button>
+          
           <div className="relative">
             <Button
               onClick={(e) => {
@@ -60,13 +73,13 @@ const Header: React.FC<HeaderProps> = ({
               variant="ghost"
               className="flex items-center gap-2 lg:gap-3 w-12 h-12 md:w-14 md:h-14 lg:w-auto lg:h-16 lg:px-6 bg-white/20 rounded-full hover:bg-white/40 focus:bg-white/40 transition-all duration-200 backdrop-blur-sm border border-white/20 hover:border-white/40 focus:border-white/40 active:scale-95 hover:scale-105 focus:scale-105 pointer-events-auto cursor-pointer shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-white/50"
             >
-              <Bell className="w-6 h-6 text-white" />
+              <Bell className="w-5 h-5 lg:w-6 lg:h-6 text-white" />
               <span className="hidden lg:inline text-white font-medium text-lg">알림</span>
             </Button>
             {notificationCount > 0 && (
               <Badge 
                 variant="destructive" 
-                className="absolute -top-2 -right-2 md:-top-3 md:-right-3 lg:-top-2 lg:-right-2 w-6 h-6 md:w-7 md:h-7 lg:w-8 lg:h-8 rounded-full flex items-center justify-center p-0 text-xs md:text-sm font-bold border-2 border-white z-10"
+                className="absolute -top-1 -right-1 lg:-top-2 lg:-right-2 w-5 h-5 lg:w-6 lg:h-6 rounded-full flex items-center justify-center p-0 text-xs font-bold border-2 border-white z-10"
               >
                 {notificationCount > 99 ? '99+' : notificationCount}
               </Badge>
@@ -84,19 +97,29 @@ const Header: React.FC<HeaderProps> = ({
             className="flex items-center gap-2 lg:gap-3 w-12 h-12 md:w-14 md:h-14 lg:w-auto lg:h-16 lg:px-6 bg-white/20 rounded-full hover:bg-white/40 focus:bg-white/40 transition-all duration-200 backdrop-blur-sm border border-white/20 hover:border-white/40 focus:border-white/40 overflow-hidden active:scale-95 hover:scale-105 focus:scale-105 pointer-events-auto cursor-pointer shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-white/50"
           >
             {profile?.photo ? (
-              <Avatar className="w-14 h-14">
+              <Avatar className="w-8 h-8 lg:w-10 lg:h-10">
                 <AvatarImage src={profile.photo} alt="프로필 사진" />
-                <AvatarFallback className="bg-white/20 text-white text-sm md:text-base lg:text-lg">
+                <AvatarFallback className="bg-white/20 text-white text-sm lg:text-base">
                   {getInitials(`${profile.firstName} ${profile.lastName}`)}
                 </AvatarFallback>
               </Avatar>
             ) : (
-              <User className="w-6 h-6 text-white" />
+              <User className="w-5 h-5 lg:w-6 lg:h-6 text-white" />
             )}
             <span className="hidden lg:inline text-white font-medium text-lg">프로필</span>
           </Button>
         </div>
       </div>
+
+      {/* 태블릿용 드롭다운 네비게이션 */}
+      <nav className="md:block lg:hidden mt-4 border-t border-blue-600 pt-4">
+        <div className="flex gap-4 overflow-x-auto">
+          <button className="whitespace-nowrap px-3 py-2 text-sm text-white/80 hover:text-white transition-colors duration-200">대시보드</button>
+          <button className="whitespace-nowrap px-3 py-2 text-sm text-white/80 hover:text-white transition-colors duration-200">구독 관리</button>
+          <button className="whitespace-nowrap px-3 py-2 text-sm text-white/80 hover:text-white transition-colors duration-200">통계</button>
+          <button className="whitespace-nowrap px-3 py-2 text-sm text-white/80 hover:text-white transition-colors duration-200">설정</button>
+        </div>
+      </nav>
 
       {/* 웨이브 효과 */}
       <div className="absolute bottom-0 left-0 right-0">
