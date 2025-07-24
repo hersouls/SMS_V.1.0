@@ -1901,8 +1901,7 @@ interface Profile {
   // 메인 구독 관리 화면
   if (currentScreen === 'main') {
     return (
-      <>
-        <div className="min-h-screen bg-gradient-to-b from-blue-900 via-blue-800 to-blue-700" style={{ fontFamily: "'Nanum Gothic', sans-serif" }}>
+      <div className="min-h-screen bg-gradient-to-b from-blue-900 via-blue-800 to-blue-700" style={{ fontFamily: "'Nanum Gothic', sans-serif" }}>
         <link
           href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&display=swap"
           rel="stylesheet"
@@ -2304,7 +2303,7 @@ interface Profile {
         isVisible={showEmergencyTroubleshooter}
         onClose={() => setShowEmergencyTroubleshooter(false)}
       />
-      </>
+      </div>
     );
   }
 

@@ -62,8 +62,8 @@ export const getScreenInfo = (): ScreenInfo => {
       height: window.innerHeight
     },
     device: {
-      width: screen.width,
-      height: screen.height,
+      width: window.screen.width,
+      height: window.screen.height,
       ratio: window.devicePixelRatio
     },
     breakpoint: getCurrentBreakpoint(),
@@ -148,7 +148,7 @@ export const checkImageLoading = (): ImageStatus => {
 export const checkElementOverlap = (): Array<{element1: Element, element2: Element}> => {
   const overlapping: Array<{element1: Element, element2: Element}> = [];
   const elements = Array.from(document.querySelectorAll('*')).filter(el => 
-    el.offsetWidth > 0 && el.offsetHeight > 0
+    (el as HTMLElement).offsetWidth > 0 && (el as HTMLElement).offsetHeight > 0
   );
 
   for (let i = 0; i < elements.length; i++) {
