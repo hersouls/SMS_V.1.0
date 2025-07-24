@@ -293,14 +293,14 @@ const SubscriptionApp = () => {
           const { data } = await supabase.from('subscriptions').select('count');
           console.log("✅ Subscriptions accessible");
         } catch (error) {
-          console.log("❌ Subscriptions blocked:", error.message);
+          console.log("❌ Subscriptions blocked:", error instanceof Error ? error.message : String(error));
         }
         
         try {
           const { data } = await supabase.from('profiles').select('count');
           console.log("✅ Profiles accessible");
         } catch (error) {
-          console.log("❌ Profiles blocked:", error.message);
+          console.log("❌ Profiles blocked:", error instanceof Error ? error.message : String(error));
         }
       },
       
@@ -312,7 +312,7 @@ const SubscriptionApp = () => {
         if (session) {
           console.log("✅ User ID:", session.user.id);
           console.log("✅ Access token valid:", !!session.access_token);
-          console.log("✅ Token expires at:", new Date(session.expires_at * 1000));
+          console.log("✅ Token expires at:", session.expires_at ? new Date(session.expires_at * 1000) : 'Not set');
         } else {
           console.log("❌ No active session found");
         }

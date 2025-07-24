@@ -181,7 +181,7 @@ export const EmergencyTroubleshooter: React.FC<EmergencyTroubleshooterProps> = (
       }
 
       addResult('✅ 세션 확인 완료');
-      addResult(`📅 토큰 만료 시간: ${new Date(session.expires_at * 1000).toLocaleString()}`);
+      addResult(`📅 토큰 만료 시간: ${session.expires_at ? new Date(session.expires_at * 1000).toLocaleString() : 'Not set'}`);
 
       // 2. 토큰 갱신 시도
       addResult('🔧 토큰 갱신 시도 중...');
