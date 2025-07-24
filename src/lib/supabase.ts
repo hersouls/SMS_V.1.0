@@ -42,7 +42,7 @@ export const checkSupabaseConnection = async () => {
     return { connected: true, session: data.session };
   } catch (error) {
     console.error('Supabase connection check failed:', error);
-    return { connected: false, error };
+    return { connected: false, error: error instanceof Error ? error : new Error(String(error)) };
   }
 };
 
