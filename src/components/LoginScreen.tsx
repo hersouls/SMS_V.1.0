@@ -57,14 +57,17 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
       console.log('Current URL:', window.location.href);
       console.log('Origin:', window.location.origin);
       
+      // 환경 변수 확인
+      const siteUrl = process.env.REACT_APP_SITE_URL || window.location.origin;
+      addDebugInfo(`Using site URL: ${siteUrl}`);
+      
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/`,
+          redirectTo: `${siteUrl}/auth/callback`,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
-            hd: '*', // 모든 도메인 허용
           },
           skipBrowserRedirect: false,
         }
@@ -81,18 +84,15 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
       console.log('Google OAuth initiated successfully');
       addDebugInfo('Google OAuth initiated successfully');
       
-      // OAuth는 리다이렉트를 통해 처리되므로 여기서는 로딩 상태를 유지
-      // 하지만 일정 시간 후 로딩 상태를 해제하여 사용자가 다시 시도할 수 있도록 함
-      const timeoutId = setTimeout(() => {
-        if (loading) {
-          setLoading(false);
-          setError('Google 로그인이 완료되지 않았습니다. 다시 시도해주세요.');
-          addDebugInfo('Google OAuth timeout - login not completed');
-        }
-      }, 10000); // 10초 후 타임아웃
-      
-      // 컴포넌트 언마운트 시 타임아웃 정리
-      return () => clearTimeout(timeoutId);
+      // OAuth 리다이렉트 처리
+      if (data.url) {
+        addDebugInfo(`Redirecting to: ${data.url}`);
+        window.location.href = data.url;
+      } else {
+        addDebugInfo('No redirect URL received');
+        setError('Google 로그인 URL을 받지 못했습니다.');
+        setLoading(false);
+      }
       
     } catch (error: any) {
       console.error('Google sign-in error:', error);
@@ -106,6 +106,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
           errorMessage = '네트워크 오류가 발생했습니다. 인터넷 연결을 확인해주세요.';
         } else if (error.message.includes('cancelled')) {
           errorMessage = '로그인이 취소되었습니다.';
+        } else if (error.message.includes('invalid_client')) {
+          errorMessage = 'Google OAuth 설정이 올바르지 않습니다. 관리자에게 문의해주세요.';
+        } else if (error.message.includes('redirect_uri_mismatch')) {
+          errorMessage = '리다이렉트 URL 설정이 올바르지 않습니다. 관리자에게 문의해주세요.';
         } else {
           errorMessage = `Google 로그인 실패: ${error.message}`;
         }

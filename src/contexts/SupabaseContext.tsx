@@ -102,6 +102,14 @@ export const SupabaseProvider: React.FC<SupabaseProviderProps> = ({ children }) 
             console.log('Cleaning URL from:', currentURL, 'to:', cleanURL);
             window.history.replaceState({}, document.title, cleanURL);
           }
+          
+          // OAuth 오류 처리
+          if (urlObj.searchParams.has('error')) {
+            const error = urlObj.searchParams.get('error');
+            const errorDescription = urlObj.searchParams.get('error_description');
+            console.error('OAuth error:', error, errorDescription);
+            // 오류 메시지를 사용자에게 표시할 수 있도록 상태 업데이트
+          }
         }
         
         // OAuth 오류 처리
