@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { SignUpData } from '../../types/auth';
 import { useSupabase } from '../../contexts/SupabaseContext';
+import { checkSupabaseConnection } from '../../lib/supabase';
 import { CheckCircleIcon, ExclamationCircleIcon } from '@heroicons/react/24/outline';
+import { SupabaseDebugger } from '../SupabaseDebugger';
 
 interface VerificationStepProps {
   data: SignUpData;
@@ -26,6 +28,10 @@ export const VerificationStep: React.FC<VerificationStepProps> = ({
 
     try {
       console.log('Sending verification email to:', data.email);
+      console.log('Current origin:', window.location.origin);
+      console.log('Redirect URL:', process.env.REACT_APP_SUPABASE_AUTH_REDIRECT_URL || `${window.location.origin}/auth/callback`);
+      console.log('Environment:', process.env.REACT_APP_ENV);
+      console.log('Supabase URL:', process.env.REACT_APP_SUPABASE_URL);
       
       const { data: signUpData, error } = await supabase.auth.signUp({
         email: data.email,
@@ -37,25 +43,38 @@ export const VerificationStep: React.FC<VerificationStepProps> = ({
             phone_number: data.phoneNumber,
             agree_to_marketing: data.agreeToMarketing,
           },
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          emailRedirectTo: process.env.REACT_APP_SUPABASE_AUTH_REDIRECT_URL || `${window.location.origin}/auth/callback`,
+          // 추가 설정
+          shouldCreateUser: true,
         },
       });
 
+      console.log('Full sign up response:', signUpData);
+      console.log('Sign up error:', error);
+
       if (error) {
-        console.error('Sign up error:', error);
+        console.error('Sign up error details:', {
+          message: error.message,
+          name: error.name,
+          status: error.status,
+        });
         throw error;
       }
 
-      console.log('Sign up response:', signUpData);
-      
       // 이메일 확인이 필요한 경우
       if (signUpData.user && !signUpData.session) {
+        console.log('Email verification required for user:', signUpData.user.id);
+        console.log('User email confirmed at:', signUpData.user.email_confirmed_at);
         setIsEmailSent(true);
-        console.log('Email verification required');
+        setVerificationStatus('pending');
       } else if (signUpData.session) {
         // 자동 로그인된 경우
-        console.log('User automatically signed in');
+        console.log('User automatically signed in:', signUpData.session.user.id);
         setIsEmailSent(true);
+        setVerificationStatus('verified');
+      } else {
+        console.log('Unexpected response:', signUpData);
+        throw new Error('예상치 못한 응답이 발생했습니다.');
       }
     } catch (error: any) {
       console.error('Sign up error:', error);
@@ -68,12 +87,15 @@ export const VerificationStep: React.FC<VerificationStepProps> = ({
           errorMessage = '올바른 이메일 주소를 입력해주세요.';
         } else if (error.message.includes('password')) {
           errorMessage = '비밀번호가 너무 약합니다. 더 강한 비밀번호를 사용해주세요.';
+        } else if (error.message.includes('rate limit')) {
+          errorMessage = '너무 많은 요청이 발생했습니다. 잠시 후 다시 시도해주세요.';
         } else {
           errorMessage = error.message;
         }
       }
       
       setError(errorMessage);
+      setVerificationStatus('error');
     } finally {
       setIsLoading(false);
     }
@@ -85,17 +107,24 @@ export const VerificationStep: React.FC<VerificationStepProps> = ({
 
     try {
       console.log('Resending verification email to:', data.email);
+      console.log('Resend redirect URL:', `${window.location.origin}/auth/callback`);
       
       const { error } = await supabase.auth.resend({
         type: 'signup',
         email: data.email,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          emailRedirectTo: process.env.REACT_APP_SUPABASE_AUTH_REDIRECT_URL || `${window.location.origin}/auth/callback`,
         },
       });
 
+      console.log('Resend response error:', error);
+
       if (error) {
-        console.error('Resend error:', error);
+        console.error('Resend error details:', {
+          message: error.message,
+          name: error.name,
+          status: error.status,
+        });
         throw error;
       }
 
@@ -110,6 +139,10 @@ export const VerificationStep: React.FC<VerificationStepProps> = ({
           errorMessage = '등록되지 않은 이메일 주소입니다.';
         } else if (error.message.includes('too many requests')) {
           errorMessage = '너무 많은 요청이 발생했습니다. 잠시 후 다시 시도해주세요.';
+        } else if (error.message.includes('rate limit')) {
+          errorMessage = '요청 제한에 도달했습니다. 잠시 후 다시 시도해주세요.';
+        } else if (error.message.includes('already confirmed')) {
+          errorMessage = '이미 인증이 완료된 이메일입니다.';
         } else {
           errorMessage = error.message;
         }
@@ -127,6 +160,15 @@ export const VerificationStep: React.FC<VerificationStepProps> = ({
 
     try {
       console.log('Checking verification status for:', data.email);
+      
+      // Supabase 연결 상태 확인
+      const connectionCheck = await checkSupabaseConnection();
+      if (!connectionCheck.connected) {
+        console.error('Supabase connection failed:', connectionCheck.error);
+        setError('서버 연결에 실패했습니다. 네트워크 상태를 확인해주세요.');
+        setVerificationStatus('error');
+        return;
+      }
       
       // 현재 세션 확인
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
@@ -196,6 +238,12 @@ export const VerificationStep: React.FC<VerificationStepProps> = ({
           </div>
         </div>
       </div>
+
+      {process.env.NODE_ENV === 'development' && (
+        <div className="mt-6">
+          <SupabaseDebugger />
+        </div>
+      )}
 
       {!isEmailSent ? (
         <div className="space-y-4">

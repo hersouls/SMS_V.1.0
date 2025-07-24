@@ -12,9 +12,39 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: true,
-    flowType: 'pkce'
-  }
+    flowType: 'pkce',
+    // 추가 설정
+    debug: process.env.NODE_ENV === 'development',
+  },
+  // 전역 오류 처리
+  global: {
+    headers: {
+      'X-Client-Info': 'subscription-manager-web',
+    },
+  },
 });
+
+// Supabase 클라이언트 상태 확인 함수
+export const checkSupabaseConnection = async () => {
+  try {
+    console.log('Checking Supabase connection...');
+    console.log('Supabase URL:', supabaseUrl);
+    console.log('Supabase Anon Key length:', supabaseAnonKey?.length || 0);
+    
+    const { data, error } = await supabase.auth.getSession();
+    
+    if (error) {
+      console.error('Supabase connection error:', error);
+      return { connected: false, error };
+    }
+    
+    console.log('Supabase connection successful');
+    return { connected: true, session: data.session };
+  } catch (error) {
+    console.error('Supabase connection check failed:', error);
+    return { connected: false, error };
+  }
+};
 
 // Database types
 export interface Database {
