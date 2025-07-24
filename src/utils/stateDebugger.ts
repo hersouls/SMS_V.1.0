@@ -164,12 +164,12 @@ export const validateStateIntegrity = (state: any): string[] => {
 // 성능 측정
 export const measureStateUpdatePerformance = (updateFunction: () => void, label: string = 'State Update') => {
   const startTime = performance.now();
-  const startMemory = performance.memory?.usedJSHeapSize;
+  const startMemory = (performance as any).memory?.usedJSHeapSize;
   
   updateFunction();
   
   const endTime = performance.now();
-  const endMemory = performance.memory?.usedJSHeapSize;
+  const endMemory = (performance as any).memory?.usedJSHeapSize;
   
   const duration = endTime - startTime;
   const memoryDelta = startMemory && endMemory ? endMemory - startMemory : 0;
@@ -187,7 +187,7 @@ export const createStateDebugger = (getState: () => any) => {
   let previousState: any = null;
   let changeHistory: StateChange[] = [];
   
-  const debugger = {
+  const stateDebugger = {
     // 현재 상태 스냅샷
     getSnapshot: () => {
       const state = getState();
@@ -240,8 +240,8 @@ export const createStateDebugger = (getState: () => any) => {
     
     // 메모리 사용량 체크
     checkMemoryUsage: () => {
-      if (performance.memory) {
-        const memory = performance.memory;
+      if ((performance as any).memory) {
+        const memory = (performance as any).memory;
         console.log('💾 메모리 사용량:', {
           사용중: `${(memory.usedJSHeapSize / 1024 / 1024).toFixed(2)} MB`,
           총할당: `${(memory.totalJSHeapSize / 1024 / 1024).toFixed(2)} MB`,
@@ -263,14 +263,14 @@ export const createStateDebugger = (getState: () => any) => {
     }
   };
   
-  return debugger;
+  return stateDebugger;
 };
 
 // 전역 디버거 인스턴스
 let globalStateDebugger: ReturnType<typeof createStateDebugger> | null = null;
 
-export const setGlobalStateDebugger = (debugger: ReturnType<typeof createStateDebugger>) => {
-  globalStateDebugger = debugger;
+export const setGlobalStateDebugger = (stateDebugger: ReturnType<typeof createStateDebugger>) => {
+  globalStateDebugger = stateDebugger;
   
   // 브라우저 전역 객체에 노출
   if (typeof window !== 'undefined') {

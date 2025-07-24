@@ -9,14 +9,14 @@ import { SafeSubscriptionCard } from './SafeSubscriptionCard';
 import { createStateDebugger, setGlobalStateDebugger } from '../utils/stateDebugger';
 import { LoginScreen } from './LoginScreen';
 import { GoogleAuthDebug } from './GoogleAuthDebug';
-import { AuthCallback } from './components/AuthCallback';
-import { SupabaseDebugger } from './components/SupabaseDebugger';
-import { EmergencyTroubleshooter } from './components/EmergencyTroubleshooter';
-import Header from './components/ui/header';
-import StatsCard from './components/ui/stats-card';
-import SubscriptionForm from './components/ui/subscription-form';
-import DebugPanel from './components/DebugPanel';
-import { Button } from './components/ui/button';
+// import { AuthCallback } from './components/AuthCallback';
+import { SupabaseDebugger } from './SupabaseDebugger';
+import { EmergencyTroubleshooter } from './EmergencyTroubleshooter';
+import Header from './ui/header';
+import StatsCard from './ui/stats-card';
+import SubscriptionForm from './ui/subscription-form';
+import DebugPanel from './DebugPanel';
+import { Button } from './ui/button';
 
 const ImprovedApp: React.FC = () => {
   const { user, profile: supabaseProfile, loading: authLoading, signOut, supabase } = useSupabase();

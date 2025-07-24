@@ -11,7 +11,7 @@ import {
 import { useSupabase } from './contexts/SupabaseContext';
 import { LoginScreen } from './components/LoginScreen';
 import { GoogleAuthDebug } from './components/GoogleAuthDebug';
-import { AuthCallback } from './components/AuthCallback';
+// import { AuthCallback } from './components/AuthCallback';
 import { SupabaseDebugger } from './components/SupabaseDebugger';
 import { EmergencyTroubleshooter } from './components/EmergencyTroubleshooter';
 import Header from './components/ui/header';
@@ -2997,7 +2997,7 @@ const App = () => {
   return (
     <Router>
       <Routes>
-        <Route path="/auth/callback" element={<AuthCallback />} />
+        {/* <Route path="/auth/callback" element={<AuthCallback />} /> */}
         <Route path="/test" element={<TestPage />} />
         <Route path="/*" element={<SubscriptionApp />} />
       </Routes>
