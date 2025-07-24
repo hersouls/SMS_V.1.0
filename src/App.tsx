@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import {
   Search, Check, Calendar, DollarSign, Tag, Bell, User, Home, Menu, Plus, Edit2, Trash2, Upload, Image,
-  Settings, ChevronLeft, ChevronRight, CreditCard, Globe, Banknote, CalendarRange, TrendingUp
+  Settings, ChevronLeft, ChevronRight, CreditCard, Globe, Banknote, CalendarRange, TrendingUp, Play, Pause, Volume2, VolumeX
 } from 'lucide-react';
 import { Transition } from '@headlessui/react';
 import {
@@ -113,6 +113,16 @@ const SubscriptionApp = () => {
   const [isUpdatingSubscription, setIsUpdatingSubscription] = useState(false);
   const [addingProgress, setAddingProgress] = useState('');
   const [isSavingProfile, setIsSavingProfile] = useState(false);
+
+  // 오디오 플레이어 상태
+  const [audioRef, setAudioRef] = useState<HTMLAudioElement | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [volume, setVolume] = useState(0.5);
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasAutoPlayed, setHasAutoPlayed] = useState(false);
 
   const [customService, setCustomService] = useState<CustomService>({
     name: '',
@@ -1732,6 +1742,147 @@ const SubscriptionApp = () => {
     }
   };
 
+  // 오디오 플레이어 관련 함수들
+  const initializeAudio = () => {
+    setIsLoading(true);
+    const audio = new Audio('/Moonwave.mp3');
+    audio.volume = volume;
+    audio.muted = isMuted;
+    
+    audio.addEventListener('loadedmetadata', () => {
+      setDuration(audio.duration);
+      setIsLoading(false);
+    });
+    
+    audio.addEventListener('loadstart', () => {
+      setIsLoading(true);
+    });
+    
+    audio.addEventListener('canplay', () => {
+      setIsLoading(false);
+    });
+    
+    audio.addEventListener('timeupdate', () => {
+      setCurrentTime(audio.currentTime);
+    });
+    
+    audio.addEventListener('ended', () => {
+      setIsPlaying(false);
+      setCurrentTime(0);
+    });
+    
+    audio.addEventListener('play', () => {
+      setIsPlaying(true);
+      setIsLoading(false);
+    });
+    
+    audio.addEventListener('pause', () => {
+      setIsPlaying(false);
+    });
+    
+    audio.addEventListener('error', () => {
+      setIsLoading(false);
+      console.error('오디오 파일을 로드할 수 없습니다.');
+    });
+    
+    setAudioRef(audio);
+  };
+
+  const togglePlay = () => {
+    if (!audioRef) {
+      initializeAudio();
+      return;
+    }
+    
+    if (isPlaying) {
+      audioRef.pause();
+    } else {
+      audioRef.play();
+    }
+  };
+
+  const toggleMute = () => {
+    if (!audioRef) return;
+    
+    const newMutedState = !isMuted;
+    audioRef.muted = newMutedState;
+    setIsMuted(newMutedState);
+  };
+
+  const handleVolumeChange = (newVolume: number) => {
+    if (!audioRef) return;
+    
+    setVolume(newVolume);
+    audioRef.volume = newVolume;
+    
+    if (newVolume === 0) {
+      setIsMuted(true);
+      audioRef.muted = true;
+    } else if (isMuted) {
+      setIsMuted(false);
+      audioRef.muted = false;
+    }
+  };
+
+  const handleSeek = (newTime: number) => {
+    if (!audioRef) return;
+    
+    audioRef.currentTime = newTime;
+    setCurrentTime(newTime);
+  };
+
+  const formatTime = (time: number) => {
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  // 컴포넌트 마운트 시 오디오 초기화 및 자동 재생
+  useEffect(() => {
+    if (isLoggedIn) {
+      initializeAudio();
+      
+      // 자동 재생 시도 (브라우저 정책으로 인해 사용자 상호작용 후에만 작동)
+      const attemptAutoPlay = async () => {
+        if (hasAutoPlayed) return;
+        
+        try {
+          const audio = new Audio('/Moonwave.mp3');
+          audio.volume = volume;
+          await audio.play();
+          audio.pause();
+          audio.currentTime = 0;
+          
+          // 자동 재생이 가능한 경우 실제 오디오로 재생
+          setTimeout(() => {
+            if (audioRef && !hasAutoPlayed) {
+              audioRef.play().then(() => {
+                setHasAutoPlayed(true);
+                addNotification('success', '음악 재생', 'Moonwave 음악이 자동으로 재생됩니다.');
+              }).catch(() => {
+                console.log('자동 재생이 차단되었습니다. 사용자가 재생 버튼을 클릭해주세요.');
+              });
+            }
+          }, 1000);
+        } catch (error) {
+          console.log('자동 재생이 차단되었습니다. 사용자가 재생 버튼을 클릭해주세요.');
+        }
+      };
+      
+      // 페이지 로드 후 3초 뒤에 자동 재생 시도
+      const autoPlayTimer = setTimeout(attemptAutoPlay, 3000);
+      
+      // Cleanup 함수
+      return () => {
+        clearTimeout(autoPlayTimer);
+        if (audioRef) {
+          audioRef.pause();
+          audioRef.src = '';
+        }
+      };
+    }
+  }, [isLoggedIn]);
+
   // 로딩 중이거나 로그인하지 않은 경우
   if (authLoading) {
     return (
@@ -1937,6 +2088,89 @@ const SubscriptionApp = () => {
                   </div>
                 );
               })}
+            </div>
+          </div>
+
+          {/* 오디오 플레이어 섹션 */}
+          <div className="bg-white border-t border-gray-200 p-4">
+            <div className="max-w-md mx-auto">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-medium text-gray-900">Moonwave Music</h3>
+                  {isPlaying && (
+                    <div className="flex items-center gap-1">
+                      <div className="w-1 h-3 bg-blue-600 rounded-full animate-pulse" />
+                      <div className="w-1 h-3 bg-blue-600 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
+                      <div className="w-1 h-3 bg-blue-600 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }} />
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={toggleMute}
+                    className="p-1 text-gray-500 hover:text-gray-700 transition-colors duration-200"
+                  >
+                    {isMuted ? (
+                      <VolumeX className="w-4 h-4" />
+                    ) : (
+                      <Volume2 className="w-4 h-4" />
+                    )}
+                  </button>
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.1"
+                      value={volume}
+                      onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
+                      className="w-16 h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={togglePlay}
+                  disabled={isLoading}
+                  className={`flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 ${
+                    isLoading 
+                      ? 'bg-gray-400 cursor-not-allowed' 
+                      : 'bg-blue-600 hover:bg-blue-700 text-white'
+                  }`}
+                >
+                  {isLoading ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : isPlaying ? (
+                    <Pause className="w-5 h-5" />
+                  ) : (
+                    <Play className="w-5 h-5 ml-0.5" />
+                  )}
+                </button>
+                
+                <div className="flex-1">
+                  <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+                    <span>{formatTime(currentTime)}</span>
+                    <span>{formatTime(duration)}</span>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type="range"
+                      min="0"
+                      max={duration || 0}
+                      step="0.1"
+                      value={currentTime}
+                      onChange={(e) => handleSeek(parseFloat(e.target.value))}
+                      className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                    />
+                    <div
+                      className="absolute top-0 left-0 h-1 bg-blue-600 rounded-lg"
+                      style={{ width: `${duration ? (currentTime / duration) * 100 : 0}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
