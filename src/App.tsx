@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Search, Check, Calendar, DollarSign, Tag, Bell, User, Home, Menu, Plus, Edit2, Trash2, Upload, Image,
-  Settings, ChevronLeft, ChevronRight, CreditCard, Globe, Banknote, CalendarRange
+  Settings, ChevronLeft, ChevronRight, CreditCard, Globe, Banknote, CalendarRange, TrendingUp
 } from 'lucide-react';
 import { Transition } from '@headlessui/react';
 import {
@@ -10,6 +10,10 @@ import {
 import { useSupabase } from './contexts/SupabaseContext';
 import { LoginScreen } from './components/LoginScreen';
 import { GoogleAuthDebug } from './components/GoogleAuthDebug';
+import Header from './components/ui/header';
+import StatsCard from './components/ui/stats-card';
+import SubscriptionCard from './components/ui/subscription-card';
+import { Button } from './components/ui/button';
 
 
 // --- 타입 정의 ---
@@ -1443,12 +1447,6 @@ const SubscriptionApp = () => {
 
 
   // 공통 헤더 컴포넌트
-  // Import new UI components
-  import Header from './components/ui/header';
-  import StatsCard from './components/ui/stats-card';
-  import SubscriptionCard from './components/ui/subscription-card';
-  import { Button } from './components/ui/button';
-  import { Plus, TrendingUp, CreditCard } from 'lucide-react';
 
   const CommonHeader = () => (
     <Header
@@ -1511,13 +1509,6 @@ const SubscriptionApp = () => {
                 onEdit={handleEditSubscription}
                 onDelete={handleDeleteSubscription}
               />
-            ))}
-                  <span className="text-xl font-bold text-gray-900">
-                    ₩{Math.round(convertToKRW(subscription.price, subscription.currency)).toLocaleString()}
-                  </span>
-                  </div>
-                </div>
-              </div>
             ))}
           </div>
 
@@ -1595,24 +1586,23 @@ const SubscriptionApp = () => {
                     {/* 이벤트 표시 */}
                     <div className="space-y-1">
                       {events.slice(0, 2).map((event) => (
-                        <button
+                        <div
                           key={event.id}
-            onClick={() => {
+                          className="w-full flex items-center gap-1 p-1 rounded text-xs hover:opacity-80 transition-opacity duration-200 cursor-pointer"
+                          style={{ backgroundColor: `${event.color}20` }}
+                          onClick={() => {
                             handleEditSubscription(event.subscription);
                           }}
-                          className="w-full flex items-center gap-1 p-1 rounded text-xs hover:opacity-80 transition-opacity duration-200"
-                          style={{ backgroundColor: `${event.color}20` }}
                         >
-                          <button
-                                                    onClick={(e: React.MouseEvent) => {
-                          e.stopPropagation();
-                          if (event.subscription.url) {
-                            window.open(event.subscription.url, '_blank', 'noopener,noreferrer');
-                          }
-                        }}
-                            className="w-3 h-3 rounded-full flex items-center justify-center text-[8px] text-white overflow-hidden hover:opacity-80 transition-opacity duration-200"
+                          <div
+                            onClick={(e: React.MouseEvent) => {
+                              e.stopPropagation();
+                              if (event.subscription.url) {
+                                window.open(event.subscription.url, '_blank', 'noopener,noreferrer');
+                              }
+                            }}
+                            className="w-3 h-3 rounded-full flex items-center justify-center text-[8px] text-white overflow-hidden hover:opacity-80 transition-opacity duration-200 cursor-pointer"
                             style={{ backgroundColor: event.color }}
-                            disabled={!event.subscription.url}
                           >
                             {event.iconImage ? (
                               <img 
@@ -1623,13 +1613,13 @@ const SubscriptionApp = () => {
                             ) : (
                               event.icon
                             )}
-          </button>
+                          </div>
                           <span className="truncate font-medium text-left" style={{ color: event.color }}>
                             {event.name}
                             {/* event.isPaymentDay && <span className="text-[10px] ml-1">(결제)</span> */}
                             {/* event.isRenewalDay && <span className="text-[10px] ml-1">(갱신)</span> */}
                           </span>
-                        </button>
+                        </div>
                       ))}
                       {events.length > 2 && (
                         <div className="text-xs text-gray-500 text-center">
