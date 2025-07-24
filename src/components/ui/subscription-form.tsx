@@ -103,6 +103,11 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
       return;
     }
 
+    // 시작일이 비어있으면 오늘 날짜로 설정
+    if (!formData.startDate) {
+      formData.startDate = new Date().toISOString().split('T')[0];
+    }
+
     // 결제일 검증
     if (formData.paymentDate && (parseInt(formData.paymentDate) < 1 || parseInt(formData.paymentDate) > 31)) {
       alert('결제일은 1일부터 31일 사이여야 합니다.');
@@ -132,8 +137,19 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
       category: formData.category?.trim() || null,
       is_active: formData.isActive !== false
     };
+
+    // 데이터 검증 로그
+    console.log('=== 폼 데이터 검증 ===');
+    console.log('서비스명:', submitData.name, '길이:', submitData.name.length);
+    console.log('가격:', submitData.price, '타입:', typeof submitData.price);
+    console.log('갱신일:', submitData.renew_date, '타입:', typeof submitData.renew_date);
+    console.log('시작일:', submitData.start_date, '타입:', typeof submitData.start_date);
+    console.log('결제일:', submitData.payment_date, '타입:', typeof submitData.payment_date);
+    console.log('아이콘 이미지:', submitData.icon_image_url ? '있음' : '없음');
     
     console.log('구독 폼 제출 데이터 (검증 완료, DB 스키마 매핑):', submitData);
+    console.log('폼 데이터 원본:', formData);
+    console.log('제출 시점:', new Date().toISOString());
     onSubmit(submitData);
   };
 
@@ -324,7 +340,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="startDate">시작일 *</Label>
+                <Label htmlFor="startDate">시작일</Label>
                 <div className="relative">
                   <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <Input
@@ -333,7 +349,6 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
                     value={formData.startDate}
                     onChange={(e) => handleInputChange('startDate', e.target.value)}
                     className="pl-10"
-                    required
                   />
                 </div>
               </div>

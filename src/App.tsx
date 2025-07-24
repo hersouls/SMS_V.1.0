@@ -690,6 +690,19 @@ const SubscriptionApp = () => {
       return;
     }
 
+    // 날짜 형식 검증
+    if (formData.renew_date && !formData.renew_date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      console.error('잘못된 갱신일 형식:', formData.renew_date);
+      alert('갱신일 형식이 올바르지 않습니다. (YYYY-MM-DD)');
+      return;
+    }
+
+    if (formData.start_date && !formData.start_date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      console.error('잘못된 시작일 형식:', formData.start_date);
+      alert('시작일 형식이 올바르지 않습니다. (YYYY-MM-DD)');
+      return;
+    }
+
     // 중복 구독 검사
     const existingSubscription = subscriptions.find(sub => 
       sub.name.toLowerCase() === formData.name.toLowerCase()
@@ -726,13 +739,13 @@ const SubscriptionApp = () => {
       // 삽입할 데이터 준비 (DB 스키마에 맞게 변환 및 타입 검증)
       const insertData = {
         user_id: user.id,
-        name: String(formData.name).trim(),
+        name: String(formData.name || '').trim(),
         icon: String(formData.icon || '📱'),
-        icon_image_url: formData.iconImage ? String(formData.iconImage) : null,
-        price: parseFloat(String(formData.price)) || 0,
+        icon_image_url: formData.icon_image_url ? String(formData.icon_image_url) : null,
+        price: parseFloat(String(formData.price || 0)) || 0,
         currency: String(formData.currency || 'KRW'),
-        renew_date: String(formData.renew_date),
-        start_date: String(formData.start_date || new Date().toISOString().split('T')[0]),
+        renew_date: String(formData.renew_date || ''),
+        start_date: formData.start_date ? String(formData.start_date) : null,
         payment_date: formData.payment_date ? parseInt(String(formData.payment_date)) : null,
         payment_card: formData.payment_card ? String(formData.payment_card).trim() : null,
         url: formData.url ? String(formData.url).trim() : null,
@@ -740,6 +753,14 @@ const SubscriptionApp = () => {
         category: formData.category ? String(formData.category).trim() : null,
         is_active: Boolean(formData.is_active !== false)
       };
+
+      // 필드명 매핑 디버깅
+      console.log('=== 필드명 매핑 디버깅 ===');
+      console.log('formData.icon_image_url:', formData.icon_image_url);
+      console.log('formData.renew_date:', formData.renew_date);
+      console.log('formData.start_date:', formData.start_date);
+      console.log('formData.payment_date:', formData.payment_date);
+      console.log('formData.payment_card:', formData.payment_card);
 
       // 추가 데이터 검증
       if (insertData.price <= 0) {
@@ -764,6 +785,9 @@ const SubscriptionApp = () => {
       console.log('- price (number):', typeof insertData.price, insertData.price);
       console.log('- currency (string):', typeof insertData.currency, insertData.currency);
       console.log('- renew_date (string):', typeof insertData.renew_date, insertData.renew_date);
+      console.log('- start_date (string|null):', typeof insertData.start_date, insertData.start_date);
+      console.log('- payment_date (number|null):', typeof insertData.payment_date, insertData.payment_date);
+      console.log('- icon_image_url (string|null):', typeof insertData.icon_image_url, insertData.icon_image_url);
 
       console.log('=== Supabase 쿼리 실행 시작 ===');
       const { data, error } = await supabase
@@ -780,6 +804,9 @@ const SubscriptionApp = () => {
         console.error('에러 상세:', error.details);
         console.error('에러 힌트:', error.hint);
         console.error('전체 에러 정보:', JSON.stringify(error, null, 2));
+        console.error('삽입 시도한 데이터:', JSON.stringify(insertData, null, 2));
+        console.error('사용자 ID:', user.id);
+        console.error('Supabase 클라이언트 상태:', !!supabase);
         
         let userFriendlyMessage = '구독 추가 중 오류가 발생했습니다.';
         
@@ -798,6 +825,10 @@ const SubscriptionApp = () => {
             userFriendlyMessage = '요청 시간이 초과되었습니다. 다시 시도해주세요.';
           } else if (error.message.includes('not-null constraint')) {
             userFriendlyMessage = '필수 정보가 누락되었습니다. 모든 필수 항목을 입력해주세요.';
+          } else if (error.message.includes('invalid input syntax')) {
+            userFriendlyMessage = '입력 데이터 형식이 올바르지 않습니다. 다시 확인해주세요.';
+          } else if (error.message.includes('column') && error.message.includes('does not exist')) {
+            userFriendlyMessage = '데이터베이스 스키마 오류가 발생했습니다. 관리자에게 문의해주세요.';
           } else {
             userFriendlyMessage = `구독 추가 중 오류가 발생했습니다: ${error.message}`;
           }
@@ -1592,13 +1623,17 @@ const SubscriptionApp = () => {
     const testData = {
       name: `테스트 구독 ${Date.now()}`, // 중복 방지를 위해 타임스탬프 추가
       icon: '🧪',
+      icon_image_url: null,
       price: 9900,
       currency: 'KRW',
       renew_date: '2024-03-15',
       start_date: '2024-02-15',
       payment_date: 15,
+      payment_card: null,
+      url: null,
       category: 'testing',
-      color: '#10B981'
+      color: '#10B981',
+      is_active: true
     };
     
     console.log('=== 테스트 구독 추가 시작 ===');
