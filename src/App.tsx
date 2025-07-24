@@ -335,7 +335,13 @@ const SubscriptionApp = () => {
         .order('created_at', { ascending: false });
       if (error) {
         console.error('Error loading subscriptions:', error);
-        await addNotification('error', '구독 로딩 실패', '구독 정보를 불러오지 못했습니다.');
+        console.error('Subscription loading error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+        await addNotification('error', '구독 로딩 실패', '구독 정보를 불러오는 중 오류가 발생했습니다.');
         return;
       }
       const localSubscriptions: Subscription[] = data.map((sub, index) => ({
@@ -357,7 +363,12 @@ const SubscriptionApp = () => {
       setSubscriptions(localSubscriptions);
     } catch (error) {
       console.error('Error loading subscriptions:', error);
-      await addNotification('error', '구독 로딩 실패', '구독 정보를 불러오지 못했습니다.');
+      console.error('Subscription loading exception details:', {
+        name: error instanceof Error ? error.name : 'Unknown',
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      });
+      await addNotification('error', '구독 로딩 실패', '구독 정보를 불러오는 중 오류가 발생했습니다.');
     }
   };
 
@@ -665,6 +676,7 @@ const SubscriptionApp = () => {
       console.error('구독 추가 타임아웃 발생');
       alert('구독 추가가 시간 초과되었습니다. 다시 시도해주세요.');
       setIsAddingSubscription(false);
+      setAddingProgress('');
     }, 30000);
     
     try {
@@ -673,6 +685,7 @@ const SubscriptionApp = () => {
         console.error('네트워크 연결이 없습니다');
         alert('인터넷 연결을 확인해주세요.');
         setIsAddingSubscription(false);
+        setAddingProgress('');
         return;
       }
 
@@ -681,6 +694,7 @@ const SubscriptionApp = () => {
         console.log('구독 갱신일이 선택되지 않음');
         alert('구독 갱신일을 선택해주세요.');
         setIsAddingSubscription(false);
+        setAddingProgress('');
         return;
       }
 
@@ -784,6 +798,7 @@ const SubscriptionApp = () => {
           console.error('알림 추가 오류:', notificationError);
         }
         setIsAddingSubscription(false);
+        setAddingProgress('');
         return; // 오류 시 메인 화면으로 돌아가지 않음
       }
 
@@ -833,6 +848,17 @@ const SubscriptionApp = () => {
       resetForm();
       console.log('구독 추가 프로세스 완료');
       
+      // 성공 시 로딩 상태 해제 (즉시 처리)
+      setIsAddingSubscription(false);
+      setAddingProgress('');
+      
+      // 화면 전환을 위한 강제 업데이트
+      setTimeout(() => {
+        setCurrentScreen('main');
+        setIsAddingSubscription(false);
+        setAddingProgress('');
+      }, 200);
+      
     } catch (error) {
       console.error('구독 추가 중 예외 발생:', error);
       console.error('예외 상세 정보:', {
@@ -850,7 +876,9 @@ const SubscriptionApp = () => {
         console.error('알림 추가 오류:', notificationError);
       }
       
-      // 오류 시에는 메인 화면으로 돌아가지 않음
+      // 오류 시에도 로딩 상태 해제
+      setIsAddingSubscription(false);
+      setAddingProgress('');
     } finally {
       console.log('구독 추가 프로세스 종료 - 로딩 상태 해제');
       clearTimeout(timeoutId);
@@ -1032,6 +1060,7 @@ const SubscriptionApp = () => {
     });
     setIsAddingSubscription(false);
     setIsUpdatingSubscription(false);
+    setAddingProgress('');
   };
 
   const formatDate = (dateString: string) => {
