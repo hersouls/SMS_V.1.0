@@ -274,7 +274,7 @@ export const setGlobalStateDebugger = (stateDebugger: ReturnType<typeof createSt
   
   // 브라우저 전역 객체에 노출
   if (typeof window !== 'undefined') {
-    (window as any).moonwaveDebugger = debugger;
+    (window as any).moonwaveDebugger = stateDebugger;
   }
 };
 
