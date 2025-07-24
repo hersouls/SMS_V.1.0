@@ -29,7 +29,10 @@ const SupabaseTest: React.FC = () => {
       if (result.connected) {
         addResult('Connection Test', 'success', 'Supabase connection successful', result.session);
       } else {
-        addResult('Connection Test', 'error', `Connection failed: ${result.error?.message}`, result.error);
+        const errorMessage = result.error && typeof result.error === 'object' && 'message' in result.error 
+          ? result.error.message 
+          : 'Unknown error';
+        addResult('Connection Test', 'error', `Connection failed: ${errorMessage}`, result.error);
       }
     } catch (error) {
       addResult('Connection Test', 'error', `Unexpected error: ${error}`, error);
