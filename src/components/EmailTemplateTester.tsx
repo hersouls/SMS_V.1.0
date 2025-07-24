@@ -170,20 +170,20 @@ export const EmailTemplateTester: React.FC = () => {
       <div className="bg-yellow-50 p-4 rounded-md border border-yellow-200">
         <h3 className="text-lg font-semibold mb-3 text-yellow-800">Supabase 대시보드 설정 가이드</h3>
         <div className="text-sm text-yellow-700 space-y-2">
-          <p><strong>1. Authentication > Settings</strong></p>
+          <p><strong>1. Authentication &gt; Settings</strong></p>
           <ul className="list-disc list-inside ml-4 space-y-1">
             <li>Site URL: <code>http://localhost:3000</code></li>
             <li>Redirect URLs: <code>http://localhost:3000/auth/callback</code></li>
           </ul>
           
-          <p><strong>2. Authentication > Email Templates</strong></p>
+          <p><strong>2. Authentication &gt; Email Templates</strong></p>
           <ul className="list-disc list-inside ml-4 space-y-1">
             <li>Confirm signup 템플릿 활성화</li>
             <li>Reset password 템플릿 활성화 (선택사항)</li>
             <li>Magic link 템플릿 활성화 (선택사항)</li>
           </ul>
           
-          <p><strong>3. Authentication > Providers</strong></p>
+          <p><strong>3. Authentication &gt; Providers</strong></p>
           <ul className="list-disc list-inside ml-4 space-y-1">
             <li>Email provider 활성화</li>
             <li>Confirm email 활성화</li>
