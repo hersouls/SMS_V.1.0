@@ -18,6 +18,7 @@ import SubscriptionCard from './components/ui/subscription-card';
 import SubscriptionForm from './components/ui/subscription-form';
 import DebugPanel from './components/DebugPanel';
 import { Button } from './components/ui/button';
+import TestPage from './pages/TestPage';
 
 
 // --- 타입 정의 ---
@@ -2791,6 +2792,7 @@ const App = () => {
     <Router>
       <Routes>
         <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="/test" element={<TestPage />} />
         <Route path="/*" element={<SubscriptionApp />} />
       </Routes>
     </Router>
