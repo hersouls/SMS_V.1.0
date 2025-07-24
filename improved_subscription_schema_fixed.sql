@@ -86,10 +86,7 @@ CREATE TABLE public.notifications (
     title TEXT NOT NULL,
     message TEXT NOT NULL,
     is_read BOOLEAN DEFAULT false,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    
-    -- 인덱스를 위한 제약조건
-    INDEX idx_notifications_user_unread (user_id, is_read, created_at)
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- 8. 알람 히스토리 테이블
