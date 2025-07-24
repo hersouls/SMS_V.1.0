@@ -164,15 +164,15 @@ export const withErrorBoundary = <P extends object>(
 // 상태 안전성을 위한 유틸리티 함수들
 export const safeStateAccess = {
   // 안전한 배열 접근
-  getArrayItem: <T>(array: T[] | undefined | null, index: number): T | undefined => {
-    if (!array || !Array.isArray(array) || index < 0 || index >= array.length) {
+  getArrayItem: function<T>(array: T[] | undefined | null, index: number): T | undefined {
+    if (!array || !Array.isArray(array) || index < 0 || !(index < array.length)) {
       return undefined;
     }
     return array[index];
   },
 
   // 안전한 객체 속성 접근
-  getObjectProperty: <T, K extends keyof T>(obj: T | undefined | null, key: K): T[K] | undefined => {
+  getObjectProperty: function<T, K extends keyof T>(obj: T | undefined | null, key: K): T[K] | undefined {
     if (!obj || typeof obj !== 'object') {
       return undefined;
     }
@@ -180,7 +180,7 @@ export const safeStateAccess = {
   },
 
   // 안전한 문자열 접근
-  getString: (value: any): string => {
+  getString: function(value: any): string {
     if (typeof value === 'string') {
       return value;
     }
@@ -191,7 +191,7 @@ export const safeStateAccess = {
   },
 
   // 안전한 숫자 접근
-  getNumber: (value: any, defaultValue: number = 0): number => {
+  getNumber: function(value: any, defaultValue: number = 0): number {
     if (typeof value === 'number' && !isNaN(value)) {
       return value;
     }
@@ -200,7 +200,7 @@ export const safeStateAccess = {
   },
 
   // 안전한 불린 접근
-  getBoolean: (value: any): boolean => {
+  getBoolean: function(value: any): boolean {
     if (typeof value === 'boolean') {
       return value;
     }
