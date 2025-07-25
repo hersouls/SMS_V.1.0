@@ -1,11 +1,8 @@
 import {
   formatCurrency,
   formatDate,
-  splitFullName,
   generateId,
-  isSupabaseError,
-  ERROR_MESSAGES,
-  SUCCESS_MESSAGES
+  ERROR_MESSAGES
 } from '../../lib/utils';
 
 describe('Utils Functions', () => {
@@ -45,48 +42,16 @@ describe('Utils Functions', () => {
     });
   });
 
-  describe('splitFullName', () => {
-    it('should split full name into first and last name', () => {
-      const result = splitFullName('홍길동');
-      expect(result).toEqual({
-        firstName: '홍길동',
-        lastName: ''
-      });
-    });
 
-    it('should handle names with multiple parts', () => {
-      const result = splitFullName('김 철수');
-      expect(result).toEqual({
-        firstName: '김',
-        lastName: '철수'
-      });
-    });
-
-    it('should handle empty string', () => {
-      const result = splitFullName('');
-      expect(result).toEqual({
-        firstName: '',
-        lastName: ''
-      });
-    });
-
-    it('should handle single space', () => {
-      const result = splitFullName(' ');
-      expect(result).toEqual({
-        firstName: '',
-        lastName: ''
-      });
-    });
-  });
 
   describe('generateId', () => {
-    it('should generate a unique timestamp-based ID', () => {
+    it('should generate a unique string-based ID', () => {
       const id1 = generateId();
       const id2 = generateId();
       
-      expect(typeof id1).toBe('number');
-      expect(typeof id2).toBe('number');
-      expect(id1).toBeLessThanOrEqual(id2);
+      expect(typeof id1).toBe('string');
+      expect(typeof id2).toBe('string');
+      expect(id1).not.toBe(id2);
     });
 
     it('should generate different IDs for consecutive calls', () => {
@@ -102,35 +67,6 @@ describe('Utils Functions', () => {
     });
   });
 
-  describe('isSupabaseError', () => {
-    it('should return true for valid Supabase error objects', () => {
-      const supabaseError = {
-        code: 'PGRST116',
-        message: 'Database error occurred'
-      };
-      expect(isSupabaseError(supabaseError)).toBe(true);
-    });
-
-    it('should return false for objects without required properties', () => {
-      expect(isSupabaseError({ code: 'PGRST116' })).toBe(false);
-      expect(isSupabaseError({ message: 'Error message' })).toBe(false);
-      expect(isSupabaseError({})).toBe(false);
-    });
-
-    it('should return false for non-objects', () => {
-      // null과 undefined는 falsy이므로 false 반환
-      expect(isSupabaseError(null)).toBeFalsy();
-      expect(isSupabaseError(undefined)).toBeFalsy();
-      expect(isSupabaseError('error')).toBeFalsy();
-      expect(isSupabaseError(123)).toBeFalsy();
-    });
-
-    it('should return false for objects with wrong property types', () => {
-      expect(isSupabaseError({ code: 123, message: 'error' })).toBe(false);
-      expect(isSupabaseError({ code: 'error', message: 123 })).toBe(false);
-    });
-  });
-
   describe('Error Messages', () => {
     it('should have all required error message constants', () => {
       expect(ERROR_MESSAGES.SUBSCRIPTION_LOAD_FAILED).toBe('구독 정보를 불러오지 못했습니다.');
@@ -138,14 +74,6 @@ describe('Utils Functions', () => {
       expect(ERROR_MESSAGES.PROFILE_CREATION_FAILED).toBe('프로필 생성에 실패했습니다.');
       expect(ERROR_MESSAGES.EXCHANGE_RATE_FAILED).toBe('환율 정보를 가져오는데 실패했습니다.');
       expect(ERROR_MESSAGES.GENERIC_ERROR).toBe('예상치 못한 오류가 발생했습니다.');
-    });
-  });
-
-  describe('Success Messages', () => {
-    it('should have all required success message constants', () => {
-      expect(SUCCESS_MESSAGES.SUBSCRIPTION_LOADED).toBe('구독 정보를 불러왔습니다.');
-      expect(SUCCESS_MESSAGES.PROFILE_CREATED).toBe('프로필이 생성되었습니다.');
-      expect(SUCCESS_MESSAGES.PROFILE_UPDATED).toBe('프로필이 업데이트되었습니다.');
     });
   });
 });

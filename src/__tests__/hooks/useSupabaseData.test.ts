@@ -11,19 +11,26 @@ const mockUseSupabase = useSupabase as jest.MockedFunction<typeof useSupabase>;
 describe('useSupabaseData Hook', () => {
   const mockSupabase = {
     from: jest.fn(),
-  };
+  } as any;
 
   const mockUser = {
     id: 'test-user-id',
     email: 'test@example.com',
-  };
+  } as any;
 
   beforeEach(() => {
     jest.clearAllMocks();
     mockUseSupabase.mockReturnValue({
       user: mockUser,
+      session: null,
+      profile: null,
       supabase: mockSupabase,
       loading: false,
+      signIn: jest.fn(),
+      signUp: jest.fn(),
+      signOut: jest.fn(),
+      updateProfile: jest.fn(),
+      checkProfileStatus: jest.fn(),
     });
   });
 
@@ -64,8 +71,15 @@ describe('useSupabaseData Hook', () => {
     it('should return empty array when user is not authenticated', async () => {
       mockUseSupabase.mockReturnValue({
         user: null,
+        session: null,
+        profile: null,
         supabase: mockSupabase,
         loading: false,
+        signIn: jest.fn(),
+        signUp: jest.fn(),
+        signOut: jest.fn(),
+        updateProfile: jest.fn(),
+        checkProfileStatus: jest.fn(),
       });
 
       const { result } = renderHook(() => useSupabaseData());
@@ -170,8 +184,15 @@ describe('useSupabaseData Hook', () => {
     it('should return empty array when user is not authenticated', async () => {
       mockUseSupabase.mockReturnValue({
         user: null,
+        session: null,
+        profile: null,
         supabase: mockSupabase,
         loading: false,
+        signIn: jest.fn(),
+        signUp: jest.fn(),
+        signOut: jest.fn(),
+        updateProfile: jest.fn(),
+        checkProfileStatus: jest.fn(),
       });
 
       const { result } = renderHook(() => useSupabaseData());
@@ -271,8 +292,15 @@ describe('useSupabaseData Hook', () => {
     it('should not save notification when user is not authenticated', async () => {
       mockUseSupabase.mockReturnValue({
         user: null,
+        session: null,
+        profile: null,
         supabase: mockSupabase,
         loading: false,
+        signIn: jest.fn(),
+        signUp: jest.fn(),
+        signOut: jest.fn(),
+        updateProfile: jest.fn(),
+        checkProfileStatus: jest.fn(),
       });
 
       const { result } = renderHook(() => useSupabaseData());

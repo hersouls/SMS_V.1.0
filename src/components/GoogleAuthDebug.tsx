@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useSupabase } from '../contexts/SupabaseContext';
 
 export const GoogleAuthDebug: React.FC = () => {

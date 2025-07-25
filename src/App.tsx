@@ -1,12 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import {
-  Search, Check, Calendar, DollarSign, Tag, Bell, User, Home, Menu, Plus, Edit2, Trash2, Upload, Image,
-  Settings, ChevronLeft, ChevronRight, CreditCard, Globe, Banknote, CalendarRange, TrendingUp, Play, Pause, Volume2, VolumeX
+  Calendar, Tag, Bell, Plus, Edit2, Trash2, ChevronLeft, ChevronRight, CreditCard, Globe, Banknote, CalendarRange, TrendingUp, Play, Pause, Volume2, VolumeX
 } from 'lucide-react';
 import { Transition } from '@headlessui/react';
 import {
-  CheckCircleIcon, XMarkIcon, CheckIcon, HandThumbUpIcon, UserIcon, PhotoIcon, UserCircleIcon
+  CheckCircleIcon, XMarkIcon, CheckIcon, PhotoIcon, UserCircleIcon
 } from '@heroicons/react/24/outline';
 import { useSupabase } from './contexts/SupabaseContext';
 import { LoginScreen } from './components/LoginScreen';
@@ -25,7 +24,6 @@ import DebugPanel from './components/DebugPanel';
 import { Button } from './components/ui/button';
 import TestPage from './pages/TestPage';
 import { createDebugObject } from './utils/responsive-debug';
-import ResponsiveTestPanel from './components/ResponsiveTestPanel';
 
 
 // --- 타입 정의 ---
@@ -123,7 +121,7 @@ interface Profile {
   const [exchangeRate, setExchangeRate] = useState<number>(1300);
   const [exchangeRateLoading, setExchangeRateLoading] = useState(false);
   const [isAddingSubscription, setIsAddingSubscription] = useState(false);
-  const [isUpdatingSubscription, setIsUpdatingSubscription] = useState(false);
+
   const [addingProgress, setAddingProgress] = useState('');
   const [isSavingProfile, setIsSavingProfile] = useState(false);
 
@@ -300,14 +298,14 @@ interface Profile {
         console.log("🔍 Testing RLS policies...");
         
         try {
-          const { data } = await supabase.from('subscriptions').select('count');
+          await supabase.from('subscriptions').select('count');
           console.log("✅ Subscriptions accessible");
         } catch (error) {
           console.log("❌ Subscriptions blocked:", error instanceof Error ? error.message : String(error));
         }
         
         try {
-          const { data } = await supabase.from('profiles').select('count');
+          await supabase.from('profiles').select('count');
           console.log("✅ Profiles accessible");
         } catch (error) {
           console.log("❌ Profiles blocked:", error instanceof Error ? error.message : String(error));
@@ -785,12 +783,7 @@ interface Profile {
     }
   };
 
-  const handleCustomInput = (field: keyof CustomService, value: string | boolean) => {
-    setCustomService(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
+
 
   // 15. Supabase 구독 추가
   // 새로운 구독 추가 함수 (SubscriptionForm과 호환)
@@ -1205,7 +1198,7 @@ interface Profile {
   };
 
   // 18. 카테고리 목록
-  const categories = ['전체', '엔터테인먼트', '음악', '생산성', '쇼핑', '개발', 'AI서비스'];
+
 
   const resetForm = () => {
     setCustomService({
@@ -1222,7 +1215,7 @@ interface Profile {
       iconImage: ''
     });
     setIsAddingSubscription(false);
-    setIsUpdatingSubscription(false);
+    
     setAddingProgress('');
   };
 
@@ -1235,66 +1228,7 @@ interface Profile {
     });
   };
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      // 파일 형식 체크
-      if (!file.type.startsWith('image/')) {
-        alert('이미지 파일만 업로드 가능합니다.');
-        return;
-      }
 
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const result = e.target?.result as string;
-        
-        // 이미지 크기 최적화
-        const img = new window.Image();
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d');
-          
-          // 최적 크기로 리사이즈 (128px)
-          const maxSize = 128;
-          let { width, height } = img;
-          
-          if (width > height) {
-            if (width > maxSize) {
-              height = (height * maxSize) / width;
-              width = maxSize;
-            }
-          } else {
-            if (height > maxSize) {
-              width = (width * maxSize) / height;
-              height = maxSize;
-            }
-          }
-          
-          canvas.width = width;
-          canvas.height = height;
-          
-          if (ctx) {
-            ctx.drawImage(img, 0, 0, width, height);
-            const optimizedImage = canvas.toDataURL('image/jpeg', 0.8);
-            
-            setCustomService(prev => ({
-              ...prev,
-              iconImage: optimizedImage
-            }));
-          }
-        };
-        img.src = result;
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const removeImage = () => {
-    setCustomService(prev => ({
-      ...prev,
-      iconImage: ''
-    }));
-  };
 
   // 19. Supabase 알림 삭제
   const removeNotification = async (id: string) => {
@@ -2689,7 +2623,7 @@ interface Profile {
                 <p className="text-gray-400 text-sm mt-1">구독 활동이 여기에 기록됩니다</p>
               </div>
             ) : (
-              <ul role="list" className="-mb-8">
+              <ul className="-mb-8">
                 {alarmHistory.map((event, eventIdx) => (
                   <li key={event.id}>
                     <div className="relative pb-8">
@@ -2756,7 +2690,7 @@ interface Profile {
         
         {/* 페이지 제목 */}
         <div className="px-4 mb-6">
-          <h1 className="text-white text-2xl font-bold tracking-tight"></h1>
+          <h1 className="text-white text-2xl font-bold tracking-tight">프로필</h1>
       </div>
 
       {/* 메인 콘텐츠 */}
@@ -2765,7 +2699,7 @@ interface Profile {
             <div className="space-y-8">
               {/* 프로필 섹션 */}
               <div className="border-b border-gray-200 pb-8">
-                <h2 className="text-lg font-semibold text-gray-900 mb-2"></h2>
+                <h2 className="text-lg font-semibold text-gray-900 mb-2">기본 정보</h2>
                 <p className="text-sm text-gray-600 mb-6">
                   이 정보는 공개적으로 표시되므로 공유하는 내용에 주의하세요.
                 </p>

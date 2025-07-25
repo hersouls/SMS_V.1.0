@@ -138,7 +138,8 @@ describe('Validation Functions', () => {
         firstName: '홍',
         lastName: '길동',
         phoneNumber: '010-1234-5678',
-        agreeToTerms: true
+        agreeToTerms: true,
+        agreeToMarketing: true
       };
 
       const errors = validateSignUpData(validData);
@@ -153,7 +154,8 @@ describe('Validation Functions', () => {
         firstName: '',
         lastName: '',
         phoneNumber: 'invalid-phone',
-        agreeToTerms: false
+        agreeToTerms: false,
+        agreeToMarketing: false
       };
 
       const errors = validateSignUpData(invalidData);
@@ -177,7 +179,8 @@ describe('Validation Functions', () => {
         firstName: '홍', // valid
         lastName: '', // invalid
         phoneNumber: '010-1234-5678', // valid
-        agreeToTerms: false // invalid
+        agreeToTerms: false, // invalid
+        agreeToMarketing: true
       };
 
       const errors = validateSignUpData(partialInvalidData);
@@ -196,7 +199,8 @@ describe('Validation Functions', () => {
         firstName: '',
         lastName: '',
         phoneNumber: '',
-        agreeToTerms: false
+        agreeToTerms: false,
+        agreeToMarketing: false
       };
 
       const errors = validateSignUpData(emptyData);

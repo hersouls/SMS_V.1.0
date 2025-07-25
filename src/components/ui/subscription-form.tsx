@@ -5,7 +5,7 @@ import { Input } from './input';
 import { Label } from './label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select';
 import { cn } from '../../lib/utils';
-import { Upload, X, Calendar, DollarSign, Globe, Tag } from 'lucide-react';
+import { Upload, X, Calendar, DollarSign, Globe } from 'lucide-react';
 
 interface SubscriptionFormProps {
   subscription?: {
