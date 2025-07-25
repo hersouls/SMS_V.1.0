@@ -3044,7 +3044,7 @@ const App = () => {
         <Route path="/safe" element={<SafeSubscriptionApp />} />
         <Route path="/error-test" element={<ErrorScenarioTester />} />
         <Route path="/supabase-test" element={<SupabaseConnectionTest />} />
-        <Route path="/" element={<SubscriptionApp />} />
+        <Route path="/" element={<SafeSubscriptionApp />} />
       </Routes>
     </Router>
   );
