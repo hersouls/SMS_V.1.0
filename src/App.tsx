@@ -24,6 +24,10 @@ import DebugPanel from './components/DebugPanel';
 import { Button } from './components/ui/button';
 import TestPage from './pages/TestPage';
 import { createDebugObject } from './utils/responsive-debug';
+import { AuthProvider } from './components/AuthProvider';
+import { ProtectedRoute } from './components/ProtectedRoute';
+import { UserProfile } from './components/UserProfile';
+import { AuthTestPage } from './components/AuthTestPage';
 
 
 // --- 타입 정의 ---
@@ -2944,16 +2948,24 @@ interface Profile {
 // 메인 앱 컴포넌트를 라우팅으로 감싸기
 const App = () => {
   return (
-    <Router>
-      <Routes>
-        <Route path="/auth/callback" element={<AuthCallback />} />
-        <Route path="/test" element={<TestPage />} />
-        <Route path="/safe" element={<SafeSubscriptionApp />} />
-        <Route path="/error-test" element={<ErrorScenarioTester />} />
-        <Route path="/supabase-test" element={<SupabaseConnectionTest />} />
-        <Route path="/*" element={<SubscriptionApp />} />
-      </Routes>
-    </Router>
+    <AuthProvider>
+      <Router>
+        <Routes>
+          <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/test" element={<TestPage />} />
+          <Route path="/safe" element={<SafeSubscriptionApp />} />
+          <Route path="/error-test" element={<ErrorScenarioTester />} />
+          <Route path="/supabase-test" element={<SupabaseConnectionTest />} />
+          <Route path="/profile" element={
+            <ProtectedRoute>
+              <UserProfile />
+            </ProtectedRoute>
+          } />
+          <Route path="/auth-test" element={<AuthTestPage />} />
+          <Route path="/*" element={<SubscriptionApp />} />
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
 };
 
