@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 import {
   Calendar, Tag, Bell, Plus, Edit2, Trash2, ChevronLeft, ChevronRight, CreditCard, Globe, Banknote, CalendarRange, TrendingUp, Play, Pause, Volume2, VolumeX
 } from 'lucide-react';
