@@ -106,8 +106,8 @@ export const validateSubscriptionData = (data: any): data is SubscriptionFormDat
     return false;
   }
   
-  // Currency validation
-  if (data.currency && !['KRW', 'USD', 'EUR', 'JPY'].includes(data.currency)) {
+  // Currency validation - CNY 추가
+  if (data.currency && !['KRW', 'USD', 'EUR', 'JPY', 'CNY'].includes(data.currency)) {
     return false;
   }
   
@@ -169,7 +169,7 @@ export const validateSubscriptionForm = (formData: any): { isValid: boolean; err
     }
   }
   
-  if (formData.currency && !['KRW', 'USD', 'EUR', 'JPY'].includes(formData.currency)) {
+  if (formData.currency && !['KRW', 'USD', 'EUR', 'JPY', 'CNY'].includes(formData.currency)) {
     errors.push('지원하지 않는 통화입니다.');
   }
   
@@ -193,8 +193,8 @@ export const sanitizeSubscriptionData = (data: any): Partial<SubscriptionFormDat
     icon: data.icon ? String(data.icon) : '📱',
     icon_image_url: data.icon_image_url ? String(data.icon_image_url).trim() : undefined,
     price: data.price ? parseFloat(String(data.price)) || 0 : 0,
-    currency: data.currency && ['KRW', 'USD', 'EUR', 'JPY'].includes(data.currency) 
-      ? data.currency as 'KRW' | 'USD' | 'EUR' | 'JPY' 
+    currency: data.currency && ['KRW', 'USD', 'EUR', 'JPY', 'CNY'].includes(data.currency) 
+      ? data.currency as 'KRW' | 'USD' | 'EUR' | 'JPY' | 'CNY'
       : 'KRW',
     renew_date: data.renew_date ? String(data.renew_date) : '',
     start_date: data.start_date ? String(data.start_date) : undefined,
