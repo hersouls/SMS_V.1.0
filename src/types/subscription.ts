@@ -4,7 +4,7 @@ export interface SubscriptionFormData {
   iconImage?: string;
   icon_image_url?: string;
   price: number;
-  currency: 'KRW' | 'USD' | 'EUR' | 'JPY';
+  currency: 'KRW' | 'USD' | 'EUR' | 'JPY' | 'CNY';
   renew_date: string;
   start_date?: string;
   payment_date?: number;
@@ -22,7 +22,7 @@ export interface Subscription {
   icon: string;
   iconImage?: string;
   price: number;
-  currency: 'KRW' | 'USD' | 'EUR' | 'JPY';
+  currency: 'KRW' | 'USD' | 'EUR' | 'JPY' | 'CNY';
   renewDate: string;
   startDate: string;
   paymentDate?: string;
