@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useSupabase } from '../contexts/SupabaseContext';
-import { AlertTriangle, RefreshCw, Database, Shield, Wifi, User } from 'lucide-react';
+import { AlertTriangle, RefreshCw, Database, Wifi } from 'lucide-react';
 
 interface EmergencyTroubleshooterProps {
   isVisible: boolean;
@@ -54,7 +54,7 @@ export const EmergencyTroubleshooter: React.FC<EmergencyTroubleshooterProps> = (
 
       // 3. Supabase 연결 테스트
       addResult('🔍 Supabase 연결 테스트 중...');
-      const { data, error } = await supabase.from('profiles').select('count').limit(1);
+      const { error } = await supabase.from('profiles').select('count').limit(1);
       
       if (error) {
         addResult(`❌ Supabase 연결 실패: ${error.message}`);
@@ -89,7 +89,7 @@ export const EmergencyTroubleshooter: React.FC<EmergencyTroubleshooterProps> = (
 
       // 1. 프로필 확인
       addResult('🔍 프로필 확인 중...');
-      const { data: profile, error: profileError } = await supabase
+      const { error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
@@ -101,7 +101,7 @@ export const EmergencyTroubleshooter: React.FC<EmergencyTroubleshooterProps> = (
           addResult('🔧 프로필을 수동으로 생성합니다...');
           
           // 프로필 수동 생성
-          const { data: newProfile, error: createError } = await supabase
+          const { error: createError } = await supabase
             .from('profiles')
             .insert({
               id: user.id,
@@ -145,7 +145,7 @@ export const EmergencyTroubleshooter: React.FC<EmergencyTroubleshooterProps> = (
       // 3. RLS 정책 확인
       addResult('🔍 RLS 정책 확인 중...');
       try {
-        const { data: testData } = await supabase
+        await supabase
           .from('subscriptions')
           .select('count')
           .eq('user_id', user.id);
@@ -204,7 +204,7 @@ export const EmergencyTroubleshooter: React.FC<EmergencyTroubleshooterProps> = (
       // 4. Supabase 서비스 상태 확인
       addResult('🔍 Supabase 서비스 상태 확인 중...');
       try {
-        const { data } = await supabase.from('profiles').select('count').limit(1);
+        await supabase.from('profiles').select('count').limit(1);
         addResult('✅ Supabase 서비스 정상');
       } catch (error) {
         addResult('❌ Supabase 서비스 문제');

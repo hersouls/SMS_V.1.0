@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardContent } from './card';
 import { Button } from './button';
 import { cn, validateExchangeRateState, safeFormatCurrency } from '../../lib/utils';
-import { RefreshCw, AlertTriangle, CheckCircle, Clock, Wifi, WifiOff } from 'lucide-react';
+import { RefreshCw, AlertTriangle, CheckCircle, Clock, WifiOff } from 'lucide-react';
 
 interface ExchangeRateInfoProps {
   exchangeRate: number;

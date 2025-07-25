@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import StatsCard from './ui/stats-card';
 import SubscriptionCard from './ui/subscription-card';
 import ExchangeRateInfo from './ui/exchange-rate-info';

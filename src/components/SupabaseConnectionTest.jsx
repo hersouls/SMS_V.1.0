@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 
 const SupabaseConnectionTest = () => {
   const [testResults, setTestResults] = useState({
@@ -51,7 +51,7 @@ const SupabaseConnectionTest = () => {
         // 3. 데이터베이스 연결 테스트
         console.log('=== 3. 데이터베이스 연결 테스트 ===');
         try {
-          const { data, error, count } = await supabase
+          const { error } = await supabase
             .from('profiles')
             .select('*', { count: 'exact', head: true });
 
