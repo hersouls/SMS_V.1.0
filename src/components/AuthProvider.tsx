@@ -51,12 +51,38 @@ export function AuthProvider({ children }: AuthProviderProps) {
     console.log('Profile status check:', authState.profile);
   };
 
+  const diagnoseIssues = async (): Promise<{ issues: string[]; recommendations: string[] }> => {
+    const issues: string[] = [];
+    const recommendations: string[] = [];
+
+    // OAuth 설정 확인
+    if (!process.env.REACT_APP_GOOGLE_CLIENT_ID) {
+      issues.push('Google OAuth Client ID가 설정되지 않았습니다.');
+      recommendations.push('환경 변수 REACT_APP_GOOGLE_CLIENT_ID를 설정하세요.');
+    }
+
+    // Supabase 설정 확인
+    if (!process.env.REACT_APP_SUPABASE_URL || !process.env.REACT_APP_SUPABASE_ANON_KEY) {
+      issues.push('Supabase 설정이 완료되지 않았습니다.');
+      recommendations.push('환경 변수 REACT_APP_SUPABASE_URL과 REACT_APP_SUPABASE_ANON_KEY를 설정하세요.');
+    }
+
+    // 인증 상태 확인
+    if (!authState.isAuthenticated) {
+      issues.push('사용자가 로그인되지 않았습니다.');
+      recommendations.push('Google 로그인을 시도해보세요.');
+    }
+
+    return { issues, recommendations };
+  };
+
   const contextValue: AuthContextType = {
     ...authState,
     signIn,
     signUp,
     updateProfile,
     checkProfileStatus,
+    diagnoseIssues,
   };
 
   return (
