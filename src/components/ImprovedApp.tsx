@@ -183,8 +183,7 @@ const ImprovedSubscriptionApp: React.FC = () => {
           const { data, error } = await supabase
             .from('subscriptions')
             .select('count')
-            .limit(1)
-            .abortSignal(signal);
+            .limit(1);
 
           if (error) throw error;
           return data;
@@ -229,8 +228,7 @@ const ImprovedSubscriptionApp: React.FC = () => {
             .from('profiles')
             .select('*')
             .eq('id', user.id)
-            .single()
-            .abortSignal(signal);
+            .single();
 
           if (profileError) throw profileError;
           return profileData;
@@ -270,8 +268,7 @@ const ImprovedSubscriptionApp: React.FC = () => {
             .from('subscriptions')
             .select('*')
             .eq('user_id', user.id)
-            .order('created_at', { ascending: false })
-            .abortSignal(signal);
+            .order('created_at', { ascending: false });
 
           if (error) throw error;
           return data;
@@ -303,8 +300,7 @@ const ImprovedSubscriptionApp: React.FC = () => {
             .select('*')
             .eq('user_id', user.id)
             .order('created_at', { ascending: false })
-            .limit(50)
-            .abortSignal(signal);
+            .limit(50);
 
           if (error) throw error;
           return data;
@@ -335,8 +331,7 @@ const ImprovedSubscriptionApp: React.FC = () => {
             .select('*')
             .eq('user_id', user.id)
             .order('created_at', { ascending: false })
-            .limit(20)
-            .abortSignal(signal);
+            .limit(20);
 
           if (error) throw error;
           return data;
@@ -494,8 +489,7 @@ const ImprovedSubscriptionApp: React.FC = () => {
               created_at: new Date().toISOString()
             })
             .select()
-            .single()
-            .abortSignal(signal);
+            .single();
 
           if (error) throw error;
           return data;
@@ -531,8 +525,7 @@ const ImprovedSubscriptionApp: React.FC = () => {
             .from('notifications')
             .delete()
             .eq('id', id)
-            .eq('user_id', user.id)
-            .abortSignal(signal);
+            .eq('user_id', user.id);
 
           if (error) throw error;
         },
@@ -560,8 +553,7 @@ const ImprovedSubscriptionApp: React.FC = () => {
           const { error } = await supabase
             .from('notifications')
             .delete()
-            .eq('user_id', user.id)
-            .abortSignal(signal);
+            .eq('user_id', user.id);
 
           if (error) throw error;
         },
@@ -675,17 +667,18 @@ const ImprovedSubscriptionApp: React.FC = () => {
 
   // 사용자가 없으면 로그인 화면 표시
   if (!user) {
-    return <LoginScreen />;
+    return <LoginScreen onLoginSuccess={() => {}} />;
   }
 
   return (
     <Router>
       <div className="min-h-screen bg-gray-50">
         <Header 
-          user={user}
+          onHomeClick={() => {}}
+          onNotificationClick={() => {}}
+          onProfileClick={() => setIsEditingProfile(true)}
+          notificationCount={notifications.length}
           profile={profile}
-          onLogout={signOut}
-          onProfileEdit={() => setIsEditingProfile(true)}
         />
         
         <main className="container mx-auto px-4 py-8">
@@ -697,23 +690,20 @@ const ImprovedSubscriptionApp: React.FC = () => {
                   <StatsCard
                     title="총 구독"
                     value={subscriptions.length}
-                    icon={Tag}
-                    trend="+2"
-                    trendDirection="up"
+                    icon={<Tag className="w-6 h-6" />}
+                    trend={{ value: 2, isPositive: true }}
                   />
                   <StatsCard
                     title="월 구독료"
                     value={`₩${subscriptions.reduce((sum, sub) => sum + sub.price, 0).toLocaleString()}`}
-                    icon={CreditCard}
-                    trend="+5%"
-                    trendDirection="up"
+                    icon={<CreditCard className="w-6 h-6" />}
+                    trend={{ value: 5, isPositive: true }}
                   />
                   <StatsCard
                     title="활성 구독"
                     value={subscriptions.filter(sub => sub.isActive).length}
-                    icon={CheckCircleIcon}
-                    trend="+1"
-                    trendDirection="up"
+                    icon={<CheckCircleIcon className="w-6 h-6" />}
+                    trend={{ value: 1, isPositive: true }}
                   />
                   <StatsCard
                     title="이번 달 만료"
@@ -722,9 +712,8 @@ const ImprovedSubscriptionApp: React.FC = () => {
                       const now = new Date();
                       return renewDate.getMonth() === now.getMonth() && renewDate.getFullYear() === now.getFullYear();
                     }).length}
-                    icon={Calendar}
-                    trend="-1"
-                    trendDirection="down"
+                    icon={<Calendar className="w-6 h-6" />}
+                    trend={{ value: 1, isPositive: false }}
                   />
                 </div>
 
@@ -821,11 +810,22 @@ const ImprovedSubscriptionApp: React.FC = () => {
             } />
             
             <Route path="/test" element={<TestPage />} />
-            <Route path="/debug" element={<DebugPanel />} />
+            <Route path="/debug" element={
+              <DebugPanel 
+                onTestSubscription={() => console.log('Test subscription clicked')}
+                onTestConnection={() => console.log('Test connection clicked')}
+                onClearLogs={() => console.clear()}
+              />
+            } />
             <Route path="/google-auth-debug" element={<GoogleAuthDebug />} />
             <Route path="/auth-callback" element={<AuthCallback />} />
             <Route path="/supabase-debugger" element={<SupabaseDebugger />} />
-            <Route path="/emergency-troubleshooter" element={<EmergencyTroubleshooter />} />
+            <Route path="/emergency-troubleshooter" element={
+              <EmergencyTroubleshooter 
+                isVisible={true}
+                onClose={() => {}}
+              />
+            } />
             <Route path="/safe-subscription-app" element={<SafeSubscriptionApp />} />
             <Route path="/error-scenario-tester" element={<ErrorScenarioTester />} />
             <Route path="/supabase-connection-test" element={<SupabaseConnectionTest />} />
