@@ -24,6 +24,10 @@ import DebugPanel from './components/DebugPanel';
 import { Button } from './components/ui/button';
 import TestPage from './pages/TestPage';
 import { createDebugObject } from './utils/responsive-debug';
+import { ErrorDisplay } from './components/ErrorDisplay';
+import { ErrorActionGenerator, useErrorHandler } from './lib/errorHandlingSystem';
+import { subscriptionErrorHandlers } from './lib/supabaseWithErrorHandling';
+import { useNetworkStatus } from './lib/networkRecovery';
 
 
 // --- 타입 정의 ---
@@ -94,6 +98,8 @@ interface Profile {
   // --- 컴포넌트 시작 ---
   const SubscriptionApp = () => {
     const { user, profile: supabaseProfile, loading: authLoading, signOut, supabase, updateProfile: updateSupabaseProfile } = useSupabase();
+    const { handleError } = useErrorHandler();
+    const { isOnline } = useNetworkStatus();
 
     // 반응형 디버깅 도구 초기화
     React.useEffect(() => {
@@ -148,6 +154,22 @@ interface Profile {
     notifications: true,
     iconImage: ''
   });
+
+  // Missing state variables
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [currentError, setCurrentError] = useState<any>(null);
+  
+  // Missing refs
+  const dataLoaded = useRef(false);
+
+  // Missing functions
+  const clearError = () => {
+    setCurrentError(null);
+  };
+
+  const retryLastAction = async (action: () => void | Promise<void>) => {
+    return await action();
+  };
 
   // 1. 컴포넌트 마운트/언마운트 정리
   useEffect(() => {
@@ -3015,15 +3037,16 @@ interface Profile {
 // 메인 앱 컴포넌트를 라우팅으로 감싸기
 const App = () => {
   return (
-
-      <Router>
-        <Routes>
-          <Route path="/auth/callback" element={<AuthCallback />} />
-          <Route path="/test" element={<TestPage />} />
-          <Route path="/safe" element={<SafeSubscriptionApp />} />
-          <Route path="/error-test" element={<ErrorScenarioTester />} />
-          <Route path="/supabase-test" element={<SupabaseConnectionTest />} />
-
+    <Router>
+      <Routes>
+        <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="/test" element={<TestPage />} />
+        <Route path="/safe" element={<SafeSubscriptionApp />} />
+        <Route path="/error-test" element={<ErrorScenarioTester />} />
+        <Route path="/supabase-test" element={<SupabaseConnectionTest />} />
+        <Route path="/" element={<SafeSubscriptionApp />} />
+      </Routes>
+    </Router>
   );
 };
 
