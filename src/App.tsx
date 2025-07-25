@@ -24,6 +24,11 @@ import DebugPanel from './components/DebugPanel';
 import { Button } from './components/ui/button';
 import TestPage from './pages/TestPage';
 import { createDebugObject } from './utils/responsive-debug';
+import { useErrorHandler, ErrorActionGenerator } from './lib/errorHandlingSystem';
+import { ErrorDisplay } from './components/ErrorDisplay';
+import { useNetworkStatus } from './lib/networkRecovery';
+import { subscriptionErrorHandlers, authErrorHandlers } from './lib/supabaseWithErrorHandling';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 
 // --- 타입 정의 ---
@@ -94,6 +99,10 @@ interface Profile {
   // --- 컴포넌트 시작 ---
   const SubscriptionApp = () => {
     const { user, profile: supabaseProfile, loading: authLoading, signOut, supabase, updateProfile: updateSupabaseProfile } = useSupabase();
+    
+    // 에러 처리 시스템 초기화
+    const { currentError, handleError, clearError, retryLastAction } = useErrorHandler();
+    const { isOnline, testConnection } = useNetworkStatus();
 
     // 반응형 디버깅 도구 초기화
     React.useEffect(() => {
@@ -461,24 +470,15 @@ interface Profile {
   const loadUserSubscriptions = async () => {
     if (!user) return;
     try {
-      const { data, error } = await supabase
-        .from('subscriptions')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('is_active', true)
-        .order('created_at', { ascending: false });
+      const { data, error } = await subscriptionErrorHandlers.fetchSubscriptions(user.id);
+      
       if (error) {
         console.error('Error loading subscriptions:', error);
-        console.error('Subscription loading error details:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code
-        });
-        await addNotification('error', '구독 로딩 실패', '구독 정보를 불러오는 중 오류가 발생했습니다.');
+        handleError(error, 'load_subscriptions');
         return;
       }
-      const localSubscriptions: Subscription[] = data.map((sub, index) => ({
+      
+      const localSubscriptions: Subscription[] = (data || []).map((sub: any, index: number) => ({
         id: Date.now() + index,
         databaseId: sub.id,
         name: sub.name,
@@ -497,12 +497,7 @@ interface Profile {
       setSubscriptions(localSubscriptions);
     } catch (error) {
       console.error('Error loading subscriptions:', error);
-      console.error('Subscription loading exception details:', {
-        name: error instanceof Error ? error.name : 'Unknown',
-        message: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined
-      });
-      await addNotification('error', '구독 로딩 실패', '구독 정보를 불러오는 중 오류가 발생했습니다.');
+      handleError(error, 'load_subscriptions_exception');
     }
   };
 
@@ -1842,6 +1837,29 @@ interface Profile {
           rel="stylesheet"
         />
         
+        {/* 네트워크 상태 표시 */}
+        {!isOnline && (
+          <div className="bg-red-500 text-white text-center py-2 px-4">
+            <div className="flex items-center justify-center space-x-2">
+              <span>🌐</span>
+              <span>오프라인 모드입니다. 네트워크 연결을 확인해주세요.</span>
+            </div>
+          </div>
+        )}
+        
+        {/* 에러 표시 */}
+        {currentError && (
+          <ErrorDisplay
+            error={currentError}
+            actions={ErrorActionGenerator.generateActions(currentError, {
+              onRetry: () => retryLastAction(() => loadUserSubscriptions()),
+              onRefresh: () => window.location.reload(),
+              onGoBack: () => window.history.back()
+            })}
+            onClose={clearError}
+          />
+        )}
+        
         {/* 헤더 영역 */}
         <CommonHeader />
 
@@ -2944,16 +2962,18 @@ interface Profile {
 // 메인 앱 컴포넌트를 라우팅으로 감싸기
 const App = () => {
   return (
-    <Router>
-      <Routes>
-        <Route path="/auth/callback" element={<AuthCallback />} />
-        <Route path="/test" element={<TestPage />} />
-        <Route path="/safe" element={<SafeSubscriptionApp />} />
-        <Route path="/error-test" element={<ErrorScenarioTester />} />
-        <Route path="/supabase-test" element={<SupabaseConnectionTest />} />
-        <Route path="/*" element={<SubscriptionApp />} />
-      </Routes>
-    </Router>
+    <ErrorBoundary>
+      <Router>
+        <Routes>
+          <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/test" element={<TestPage />} />
+          <Route path="/safe" element={<SafeSubscriptionApp />} />
+          <Route path="/error-test" element={<ErrorScenarioTester />} />
+          <Route path="/supabase-test" element={<SupabaseConnectionTest />} />
+          <Route path="/*" element={<SubscriptionApp />} />
+        </Routes>
+      </Router>
+    </ErrorBoundary>
   );
 };
 
