@@ -1,3 +1,4 @@
+import { useState, useEffect, useCallback } from 'react';
 import { AppError, ErrorMessageGenerator } from './errorHandlingSystem';
 
 export interface RetryConfig {
@@ -262,5 +263,3 @@ export function useNetworkRecovery() {
   };
 }
 
-// React import 추가
-import { useState, useEffect, useCallback } from 'react';
