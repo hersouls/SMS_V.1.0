@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from './AuthProvider';
 
 export function LoginForm() {
-  const { signInWithGoogle, isLoading, error } = useAuth();
+  const { signInWithGoogle, isLoading, error, diagnoseIssues } = useAuth();
   const [diagnosticResult, setDiagnosticResult] = useState<{
     issues: string[];
     recommendations: string[];
@@ -18,7 +18,6 @@ export function LoginForm() {
 
   const handleDiagnose = async () => {
     try {
-      const { diagnoseIssues } = useAuth();
       const result = await diagnoseIssues();
       setDiagnosticResult(result);
     } catch (error) {

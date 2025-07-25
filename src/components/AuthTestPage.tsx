@@ -4,7 +4,7 @@ import { LoginForm } from './LoginForm';
 import { UserProfile } from './UserProfile';
 
 export function AuthTestPage() {
-  const { isAuthenticated, isLoading, user, profile, error } = useAuth();
+  const { isAuthenticated, isLoading, user, profile, error, diagnoseIssues } = useAuth();
   const [diagnosticResult, setDiagnosticResult] = useState<{
     issues: string[];
     recommendations: string[];
@@ -12,7 +12,6 @@ export function AuthTestPage() {
 
   const handleDiagnose = async () => {
     try {
-      const { diagnoseIssues } = useAuth();
       const result = await diagnoseIssues();
       setDiagnosticResult(result);
     } catch (error) {

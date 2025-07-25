@@ -7,7 +7,7 @@ interface ProtectedRouteProps {
   fallback?: React.ReactNode;
 }
 
-export function ProtectedRoute({ children, fallback }: ProtectedRouteProps) {
+export function ProtectedRoute({ children, fallback }: ProtectedRouteProps): React.ReactElement {
   const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
@@ -22,8 +22,8 @@ export function ProtectedRoute({ children, fallback }: ProtectedRouteProps) {
   }
 
   if (!isAuthenticated) {
-    return fallback || <LoginForm />;
+    return fallback ? <>{fallback}</> : <LoginForm />;
   }
 
-  return <>{children}</>;
+  return <div>{children}</div>;
 }
