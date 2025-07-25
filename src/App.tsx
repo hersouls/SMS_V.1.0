@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import {
   Calendar, Tag, Bell, Plus, Edit2, Trash2, ChevronLeft, ChevronRight, CreditCard, Globe, Banknote, CalendarRange, TrendingUp, Play, Pause, Volume2, VolumeX
@@ -98,6 +98,10 @@ interface Profile {
   // --- 컴포넌트 시작 ---
   const SubscriptionApp = () => {
     const { user, profile: supabaseProfile, loading: authLoading, signOut, supabase, updateProfile: updateSupabaseProfile } = useSupabase();
+    const dataLoaded = useRef(false);
+    
+    // 상태 관리
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
 
     // 반응형 디버깅 도구 초기화
     React.useEffect(() => {
@@ -109,7 +113,6 @@ interface Profile {
   const [alarmHistory, setAlarmHistory] = useState<AlarmHistory[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showNotification, setShowNotification] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentScreen, setCurrentScreen] = useState<'main' | 'add' | 'manage' | 'detail' | 'notifications' | 'alarm-history' | 'profile'>('main');
   const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null);
   const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null);
@@ -154,11 +157,30 @@ interface Profile {
     iconImage: ''
   });
 
+  // 1. 컴포넌트 마운트/언마운트 정리
+  useEffect(() => {
+    console.log('SubscriptionApp component mounted');
+    
+    return () => {
+      console.log('SubscriptionApp component unmounting, cleaning up...');
+      // 컴포넌트 언마운트 시 정리 작업
+      dataLoaded.current = false;
+    };
+  }, []);
+
   // 2. 사용자 인증 상태 확인 및 데이터 로딩
   useEffect(() => {
+    console.log('Auth state effect triggered:', { user: !!user, authLoading, supabaseProfile: !!supabaseProfile });
+    
     if (user && !authLoading) {
+      console.log('User authenticated, loading data...');
       setIsLoggedIn(true);
-      loadUserData();
+      
+      // 데이터 로딩을 한 번만 실행하도록 플래그 사용
+      if (!dataLoaded.current) {
+        dataLoaded.current = true;
+        loadUserData();
+      }
 
       // 프로필 동기화
       if (supabaseProfile) {
@@ -197,12 +219,16 @@ interface Profile {
         lastName: '',
         email: ''
       });
+      // 데이터 로딩 플래그 리셋
+      dataLoaded.current = false;
+    } else {
+      console.log('Auth state in transition:', { user: !!user, authLoading });
     }
   }, [user, authLoading, supabaseProfile]);
 
   // 2.1. supabaseProfile 변경 시 로컬 프로필 동기화
   useEffect(() => {
-    if (supabaseProfile && user) {
+    if (supabaseProfile && user && isLoggedIn) {
       console.log('Supabase profile updated, syncing local profile:', supabaseProfile);
       setProfile({
         username: supabaseProfile.username || '',
@@ -213,28 +239,39 @@ interface Profile {
         coverPhoto: supabaseProfile.cover_photo_url || ''
       });
     }
-  }, [supabaseProfile, user]);
+  }, [supabaseProfile, user, isLoggedIn]);
 
   // 3. URL 해시 처리 및 정규화
   useEffect(() => {
+    let isProcessing = false;
+    
     // OAuth 콜백 후 URL 정리
     const handleURLCleanup = () => {
-      const currentURL = window.location.href;
-      const urlObj = new URL(currentURL);
+      if (isProcessing) return;
+      isProcessing = true;
       
-      // OAuth 콜백 파라미터가 있는 경우 정리
-      if (urlObj.searchParams.has('access_token') || 
-          urlObj.searchParams.has('refresh_token') || 
-          urlObj.hash.includes('access_token')) {
-        // 파라미터와 해시를 제거하고 깔끔한 URL로 리다이렉트
-        const cleanURL = `${urlObj.origin}/`;
-        window.history.replaceState({}, document.title, cleanURL);
-      }
-      
-      // 빈 해시(#)만 있는 경우도 정리
-      if (urlObj.hash === '#') {
-        const cleanURL = `${urlObj.origin}${urlObj.pathname}${urlObj.search}`;
-        window.history.replaceState({}, document.title, cleanURL);
+      try {
+        const currentURL = window.location.href;
+        const urlObj = new URL(currentURL);
+        
+        // OAuth 콜백 파라미터가 있는 경우 정리
+        if (urlObj.searchParams.has('access_token') || 
+            urlObj.searchParams.has('refresh_token') || 
+            urlObj.hash.includes('access_token')) {
+          // 파라미터와 해시를 제거하고 깔끔한 URL로 리다이렉트
+          const cleanURL = `${urlObj.origin}/`;
+          window.history.replaceState({}, document.title, cleanURL);
+        }
+        
+        // 빈 해시(#)만 있는 경우도 정리
+        if (urlObj.hash === '#') {
+          const cleanURL = `${urlObj.origin}${urlObj.pathname}${urlObj.search}`;
+          window.history.replaceState({}, document.title, cleanURL);
+        }
+      } catch (error) {
+        console.error('URL cleanup error:', error);
+      } finally {
+        isProcessing = false;
       }
     };
 
@@ -247,14 +284,30 @@ interface Profile {
     return () => {
       window.removeEventListener('popstate', handleURLCleanup);
     };
-  }, []);
+  }, []); // 의존성 배열을 비워서 한 번만 실행
 
   // 4. 환율 정보 가져오기
   useEffect(() => {
-    fetchExchangeRate();
-    const interval = setInterval(fetchExchangeRate, 60 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, []);
+    let intervalId: NodeJS.Timeout | null = null;
+    
+    const initializeExchangeRate = async () => {
+      try {
+        await fetchExchangeRate();
+        // 성공적으로 초기화된 후에만 인터벌 설정
+        intervalId = setInterval(fetchExchangeRate, 60 * 60 * 1000);
+      } catch (error) {
+        console.error('환율 정보 초기화 실패:', error);
+      }
+    };
+
+    initializeExchangeRate();
+
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [user]); // user가 변경될 때만 재실행
 
   // 4.5. 구독 추가 상태 추적
   useEffect(() => {
@@ -443,6 +496,8 @@ interface Profile {
   const loadUserData = async () => {
     if (!user) return;
     
+    console.log('Loading user data for user:', user.id);
+    
     // 먼저 Supabase 연결을 테스트
     const isConnected = await testSupabaseConnection();
     if (!isConnected) {
@@ -456,6 +511,7 @@ interface Profile {
         loadUserNotifications(),
         loadUserAlarmHistory()
       ]);
+      console.log('User data loaded successfully');
     } catch (error) {
       console.error('Error loading user data:', error);
     }
@@ -724,8 +780,15 @@ interface Profile {
 
   // 14. 환율 정보 가져오기
   const fetchExchangeRate = async () => {
+    if (!user) {
+      console.log('No user logged in, skipping exchange rate fetch');
+      return;
+    }
+    
     setExchangeRateLoading(true);
     try {
+      console.log('Fetching exchange rate...');
+      
       // Supabase에서 최신 환율 정보 가져오기
       const today = new Date().toISOString().split('T')[0];
       const { data, error } = await supabase
@@ -738,6 +801,7 @@ interface Profile {
 
       if (data && !error) {
         setExchangeRate(data.rate);
+        console.log('Exchange rate loaded from database:', data.rate);
       } else {
         // 외부 API에서 환율 정보 가져오기 (API 키가 설정된 경우)
         const apiKey = process.env.REACT_APP_EXCHANGE_RATE_API_KEY;
@@ -757,6 +821,7 @@ interface Profile {
                 rate: usdToKrw,
                 date: today
               });
+            console.log('Exchange rate loaded from API:', usdToKrw);
           } catch (apiError) {
             console.warn('외부 환율 API 실패, 기본값 사용:', apiError);
             const mockExchangeRate = 1300 + Math.random() * 50;
@@ -776,6 +841,7 @@ interface Profile {
               rate: mockExchangeRate,
               date: today
             });
+          console.log('Exchange rate using mock value:', mockExchangeRate);
         }
       }
     } catch (error) {
