@@ -69,7 +69,7 @@ export const testEmailSending = async (email: string) => {
       email,
       password: 'test-password-123!',
       options: {
-        emailRedirectTo: process.env.REACT_APP_SUPABASE_AUTH_REDIRECT_URL || `${window.location.origin}/auth/callback`,
+        emailRedirectTo: process.env.REACT_APP_SUPABASE_AUTH_REDIRECT_URL || `${window.location.origin}/#/auth/callback`,
         data: {
           test_mode: true,
           test_timestamp: new Date().toISOString(),
