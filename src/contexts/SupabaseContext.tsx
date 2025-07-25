@@ -37,10 +37,16 @@ export const SupabaseProvider: React.FC<SupabaseProviderProps> = ({ children }) 
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout | null = null;
+    let isMounted = true;
+
     // Get initial session with timeout
-    const timeoutId = setTimeout(() => {
-      setLoading(false);
-    }, 3000); // 3초 후 강제로 로딩 종료
+    timeoutId = setTimeout(() => {
+      if (isMounted) {
+        console.log('Supabase session timeout - forcing loading to false');
+        setLoading(false);
+      }
+    }, 5000); // 5초로 증가
 
     // URL에서 OAuth 콜백 파라미터 확인
     const urlParams = new URLSearchParams(window.location.search);
@@ -50,7 +56,13 @@ export const SupabaseProvider: React.FC<SupabaseProviderProps> = ({ children }) 
     console.log('Hash params:', Object.fromEntries(hashParams.entries()));
 
     supabase.auth.getSession().then(({ data: { session } }) => {
-      clearTimeout(timeoutId);
+      if (!isMounted) return;
+      
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+      
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
@@ -58,8 +70,13 @@ export const SupabaseProvider: React.FC<SupabaseProviderProps> = ({ children }) 
       }
       setLoading(false);
     }).catch((error) => {
+      if (!isMounted) return;
+      
       console.error('Session fetch error:', error);
-      clearTimeout(timeoutId);
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
       setLoading(false);
     });
 
@@ -67,6 +84,8 @@ export const SupabaseProvider: React.FC<SupabaseProviderProps> = ({ children }) 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!isMounted) return;
+      
       console.log('Auth state changed:', event, {
         session: session ? 'exists' : 'null',
         user: session?.user ? 'exists' : 'null',
@@ -124,7 +143,10 @@ export const SupabaseProvider: React.FC<SupabaseProviderProps> = ({ children }) 
     });
 
     return () => {
-      clearTimeout(timeoutId);
+      isMounted = false;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
       subscription.unsubscribe();
     };
   }, []);
