@@ -5,6 +5,10 @@ import App from './App';
 import reportWebVitals from './reportWebVitals';
 import { SupabaseProvider } from './contexts/SupabaseContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { logEnvironmentStatus } from './lib/envValidator';
+
+// 환경변수 검증 실행
+logEnvironmentStatus();
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
