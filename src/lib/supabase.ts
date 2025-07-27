@@ -13,8 +13,6 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     detectSessionInUrl: true,
     flowType: 'pkce',
-    // OAuth 리다이렉트 URL 설정
-    redirectTo: process.env.REACT_APP_SUPABASE_AUTH_REDIRECT_URL || `${process.env.REACT_APP_SITE_URL || 'http://localhost:3000'}/#/auth/callback`,
     // 추가 설정
     debug: process.env.NODE_ENV === 'development',
   },
@@ -25,6 +23,18 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     },
   },
 });
+
+// OAuth 리다이렉트 URL 헬퍼 함수
+export const getAuthRedirectUrl = () => {
+  if (typeof window !== 'undefined') {
+    // 브라우저 환경에서는 현재 origin 사용
+    const siteUrl = process.env.REACT_APP_SITE_URL || window.location.origin;
+    return process.env.REACT_APP_SUPABASE_AUTH_REDIRECT_URL || `${siteUrl}/#/auth/callback`;
+  }
+  // 서버 환경에서는 환경 변수 사용
+  return process.env.REACT_APP_SUPABASE_AUTH_REDIRECT_URL || 
+         `${process.env.REACT_APP_SITE_URL || 'http://localhost:3000'}/#/auth/callback`;
+};
 
 // Supabase 클라이언트 상태 확인 함수
 export const checkSupabaseConnection = async () => {

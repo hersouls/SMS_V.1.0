@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useSupabase } from '../contexts/SupabaseContext';
+import { getAuthRedirectUrl } from '../lib/supabase';
 
 export const GoogleAuthDebug: React.FC = () => {
   const { supabase } = useSupabase();
@@ -34,14 +35,13 @@ export const GoogleAuthDebug: React.FC = () => {
       
       // 4. OAuth URL 생성 테스트
       addDebugInfo('Testing OAuth URL generation...');
-      const siteUrl = process.env.REACT_APP_SITE_URL || window.location.origin;
-      const redirectUrl = `${siteUrl}/#/auth/callback`;
+      const redirectUrl = getAuthRedirectUrl();
       addDebugInfo(`Using redirect URL: ${redirectUrl}`);
       
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-
+          redirectTo: redirectUrl,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',

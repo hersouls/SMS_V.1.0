@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSupabase } from '../contexts/SupabaseContext';
 import { StepByStepSignUp } from './StepByStepSignUp';
+import { getAuthRedirectUrl } from '../lib/supabase';
 
 interface LoginScreenProps {
   onLoginSuccess: () => void;
@@ -62,13 +63,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
       addDebugInfo(`Using site URL: ${siteUrl}`);
       
       // 리다이렉트 URL 설정
-      const redirectUrl = `${siteUrl}/#/auth/callback`;
+      const redirectUrl = getAuthRedirectUrl();
       addDebugInfo(`Redirect URL: ${redirectUrl}`);
       
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-
+          redirectTo: redirectUrl,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -133,7 +134,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'kakao',
         options: {
-          redirectTo: `${window.location.origin}/`
+          redirectTo: getAuthRedirectUrl()
         }
       });
       
