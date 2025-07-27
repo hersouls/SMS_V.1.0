@@ -2,7 +2,7 @@
   "name": "subscription-manager",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://subscription.mooonwave.kr",
+  "homepage": "http://localhost:3000",
   "dependencies": {
     "@headlessui/react": "^2.2.4",
     "@heroicons/react": "^2.2.0",

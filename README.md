@@ -70,10 +70,55 @@ React와 TypeScript로 개발된 구독 서비스 관리 애플리케이션입�
 
 ## 설치 및 실행
 
+### 1. 프로젝트 클론 및 의존성 설치
+
 ```bash
+# 프로젝트 클론
+git clone <repository-url>
+cd subscription-manager
+
 # 의존성 설치
 npm install
+```
 
+### 2. 환경 설정
+
+#### 2.1 .env.local 파일 생성
+프로젝트 루트 디렉토리에 `.env.local` 파일을 생성하고 다음 환경변수들을 설정하세요:
+
+```bash
+# Supabase Configuration
+REACT_APP_SUPABASE_URL=your_supabase_project_url
+REACT_APP_SUPABASE_ANON_KEY=your_supabase_anon_key
+
+# Exchange Rate API
+REACT_APP_EXCHANGE_RATE_API_KEY=your_exchange_rate_api_key
+
+# Site Configuration (localhost 개발용)
+REACT_APP_SITE_URL=http://localhost:3000
+REACT_APP_APP_NAME=구독 관리 앱
+
+# Environment
+REACT_APP_ENV=development
+
+# Supabase Auth Configuration (localhost용)
+REACT_APP_SUPABASE_AUTH_REDIRECT_URL=http://localhost:3000/auth/callback
+
+# Google OAuth Configuration (선택사항)
+REACT_APP_GOOGLE_CLIENT_ID=your_google_client_id
+REACT_APP_GOOGLE_CLIENT_SECRET=your_google_client_secret
+```
+
+#### 2.2 Supabase 설정
+1. [Supabase](https://supabase.com/)에서 새 프로젝트 생성
+2. 프로젝트 설정에서 URL과 API 키 확인
+3. Authentication > URL Configuration에서 다음 설정:
+   - Site URL: `http://localhost:3000`
+   - Redirect URLs: `http://localhost:3000/auth/callback`
+
+### 3. 개발 서버 실행
+
+```bash
 # 개발 서버 실행
 npm start
 
@@ -81,23 +126,9 @@ npm start
 npm run build
 ```
 
-## 환경 설정
+서버가 `http://localhost:3000`에서 실행됩니다.
 
-### Supabase 설정
-Supabase를 사용하여 백엔드 데이터베이스를 구성합니다.
-
-1. [Supabase](https://supabase.com/)에서 새 프로젝트 생성
-2. 프로젝트 설정에서 URL과 API 키 확인
-3. `.env.local` 파일 생성 및 환경변수 설정:
-
-```bash
-# Supabase Configuration
-REACT_APP_SUPABASE_URL=your_supabase_project_url
-REACT_APP_SUPABASE_ANON_KEY=your_supabase_anon_key
-
-# Exchange Rate API (기존 설정 유지)
-REACT_APP_EXCHANGE_RATE_API_KEY=your_exchange_rate_api_key
-```
+> **참고**: 자세한 설정 방법은 [docs/DEVELOPMENT_SETUP_GUIDE.md](docs/DEVELOPMENT_SETUP_GUIDE.md)를 참조하세요.
 
 ### 이메일 인증 설정
 
