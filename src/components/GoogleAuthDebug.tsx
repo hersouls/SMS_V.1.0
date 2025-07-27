@@ -19,23 +19,34 @@ export const GoogleAuthDebug: React.FC = () => {
       addDebugInfo(`Site URL: ${process.env.REACT_APP_SITE_URL || 'not set'}`);
       addDebugInfo(`Supabase URL: ${process.env.REACT_APP_SUPABASE_URL || 'not set'}`);
       addDebugInfo(`Supabase Key: ${process.env.REACT_APP_SUPABASE_ANON_KEY ? 'set' : 'not set'}`);
+      addDebugInfo(`Google Client ID: ${process.env.REACT_APP_GOOGLE_CLIENT_ID || 'not set'}`);
+      addDebugInfo(`Auth Redirect URL: ${process.env.REACT_APP_SUPABASE_AUTH_REDIRECT_URL || 'not set'}`);
       
-      // 2. Supabase 클라이언트 상태 확인
+      // 2. 현재 URL 정보
+      addDebugInfo(`Current URL: ${window.location.href}`);
+      addDebugInfo(`Current Origin: ${window.location.origin}`);
+      addDebugInfo(`Current Pathname: ${window.location.pathname}`);
+      
+      // 3. Supabase 클라이언트 상태 확인
       addDebugInfo('Checking Supabase client...');
       const session = await supabase.auth.getSession();
       addDebugInfo(`Current session: ${session.data.session ? 'exists' : 'null'}`);
       
-      // 3. OAuth URL 생성 테스트
+      // 4. OAuth URL 생성 테스트
       addDebugInfo('Testing OAuth URL generation...');
       const siteUrl = process.env.REACT_APP_SITE_URL || window.location.origin;
+      const redirectUrl = `${siteUrl}/#/auth/callback`;
+      addDebugInfo(`Using redirect URL: ${redirectUrl}`);
+      
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${siteUrl}/#/auth/callback`,
+          redirectTo: redirectUrl,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
           },
+          skipBrowserRedirect: true,
         }
       });
       
@@ -46,6 +57,18 @@ export const GoogleAuthDebug: React.FC = () => {
       } else {
         addDebugInfo(`OAuth URL: ${data.url}`);
         addDebugInfo('OAuth URL generated successfully');
+        
+        // 5. URL 파라미터 분석
+        if (data.url) {
+          try {
+            const url = new URL(data.url);
+            addDebugInfo(`OAuth Provider: ${url.searchParams.get('provider')}`);
+            addDebugInfo(`OAuth Redirect To: ${url.searchParams.get('redirect_to')}`);
+            addDebugInfo(`OAuth Code Challenge Method: ${url.searchParams.get('code_challenge_method')}`);
+          } catch (e) {
+            addDebugInfo(`URL parsing error: ${e}`);
+          }
+        }
       }
       
     } catch (error: any) {

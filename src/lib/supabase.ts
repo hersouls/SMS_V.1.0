@@ -13,6 +13,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     detectSessionInUrl: true,
     flowType: 'pkce',
+    // OAuth 리다이렉트 URL 설정
+    redirectTo: process.env.REACT_APP_SUPABASE_AUTH_REDIRECT_URL || `${process.env.REACT_APP_SITE_URL || 'http://localhost:3000'}/#/auth/callback`,
     // 추가 설정
     debug: process.env.NODE_ENV === 'development',
   },
