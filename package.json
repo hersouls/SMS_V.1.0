@@ -2,7 +2,7 @@
   "name": "subscription-manager",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://subscription.mooonwave.kr",
+  "homepage": "https://subscription.moonwave.kr",
   "dependencies": {
     "@headlessui/react": "^2.2.4",
     "@heroicons/react": "^2.2.0",
@@ -42,9 +42,12 @@
   },
   "scripts": {
     "start": "react-scripts start",
+    "start:dev": "REACT_APP_ENV=development react-scripts start",
     "build": "react-scripts build",
+    "build:prod": "REACT_APP_ENV=production react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "env:check": "node -e \"console.log('Environment check:'); console.log('NODE_ENV:', process.env.NODE_ENV); console.log('REACT_APP_ENV:', process.env.REACT_APP_ENV);\""
   },
   "eslintConfig": {
     "extends": [
