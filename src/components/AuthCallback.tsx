@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSupabase } from '../contexts/SupabaseContext';
+import { handleOAuthCallback, cleanOAuthURL } from '../utils/authUtils';
 
 export const AuthCallback: React.FC = () => {
   const { supabase } = useSupabase();
@@ -9,51 +10,28 @@ export const AuthCallback: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const handleAuthCallback = async () => {
+    const processCallback = async () => {
       try {
-        console.log('Handling auth callback...');
+        const result = await handleOAuthCallback();
         
-        // URL 파라미터 확인
-        const urlParams = new URLSearchParams(window.location.search);
-        const error = urlParams.get('error');
-        const errorDescription = urlParams.get('error_description');
-        
-        if (error) {
-          console.error('OAuth error:', error, errorDescription);
-          setError(`OAuth 오류: ${errorDescription || error}`);
-          setLoading(false);
-          return;
-        }
-
-        // 세션 확인
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
-        if (sessionError) {
-          console.error('Session error:', sessionError);
-          setError(`세션 오류: ${sessionError.message}`);
-          setLoading(false);
-          return;
-        }
-
-        if (session) {
-          console.log('Auth callback successful, user logged in');
-          // 메인 페이지로 리다이렉트
+        if (result.success) {
+          console.log('OAuth callback successful, redirecting to home');
+          cleanOAuthURL();
           navigate('/', { replace: true });
         } else {
-          console.log('No session found after callback');
-          setError('로그인 세션을 찾을 수 없습니다.');
+          console.error('OAuth callback failed:', result.error);
+          setError(result.error || '알 수 없는 오류가 발생했습니다.');
           setLoading(false);
         }
-        
       } catch (error: any) {
-        console.error('Auth callback error:', error);
-        setError(`콜백 처리 오류: ${error.message}`);
+        console.error('Callback processing error:', error);
+        setError(`처리 오류: ${error.message}`);
         setLoading(false);
       }
     };
 
-    handleAuthCallback();
-  }, [supabase, navigate]);
+    processCallback();
+  }, [navigate]);
 
   if (loading) {
     return (
