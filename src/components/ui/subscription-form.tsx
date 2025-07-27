@@ -38,17 +38,17 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
   const [formData, setFormData] = useState({
     name: subscription?.name || '',
     icon: subscription?.icon || '📱',
-    iconImage: subscription?.iconImage || '',
+    icon_image_url: subscription?.iconImage || '',
     price: subscription?.price || 0,
     currency: subscription?.currency || 'KRW',
-    renewDate: subscription?.renewDate || '',
-    startDate: subscription?.startDate || '',
-    paymentDate: subscription?.paymentDate || '',
-    paymentCard: subscription?.paymentCard || '',
+    renew_date: subscription?.renewDate || '',
+    start_date: subscription?.startDate || '',
+    payment_date: subscription?.paymentDate || '',
+    payment_card: subscription?.paymentCard || '',
     url: subscription?.url || '',
     color: subscription?.color || '#3B82F6',
     category: subscription?.category || '',
-    isActive: subscription?.isActive !== false
+    is_active: subscription?.isActive !== false
   });
 
   const [imagePreview, setImagePreview] = useState<string | null>(subscription?.iconImage || null);
@@ -69,7 +69,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
         setImagePreview(result);
         setFormData(prev => ({
           ...prev,
-          iconImage: result
+          icon_image_url: result
         }));
       };
       reader.readAsDataURL(file);
@@ -80,7 +80,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
     setImagePreview(null);
     setFormData(prev => ({
       ...prev,
-      iconImage: ''
+      icon_image_url: ''
     }));
   };
 
@@ -98,18 +98,18 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
       return;
     }
 
-    if (!formData.renewDate) {
+    if (!formData.renew_date) {
       alert('갱신일을 선택해주세요.');
       return;
     }
 
     // 시작일이 비어있으면 오늘 날짜로 설정
-    if (!formData.startDate) {
-      formData.startDate = new Date().toISOString().split('T')[0];
+    if (!formData.start_date) {
+      formData.start_date = new Date().toISOString().split('T')[0];
     }
 
     // 결제일 검증
-    if (formData.paymentDate && (parseInt(formData.paymentDate) < 1 || parseInt(formData.paymentDate) > 31)) {
+    if (formData.payment_date && (parseInt(formData.payment_date) < 1 || parseInt(formData.payment_date) > 31)) {
       alert('결제일은 1일부터 31일 사이여야 합니다.');
       return;
     }
@@ -120,22 +120,22 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
       return;
     }
     
-    // Supabase DB 스키마에 맞게 필드명 변환
+    // Supabase DB 스키마에 맞게 필드명 변환 (새 스키마)
     const submitData = {
       id: subscription?.id,
       name: formData.name.trim(),
       icon: formData.icon,
-      icon_image_url: formData.iconImage || null,
+      icon_image_url: formData.icon_image_url || null,
       price: parseFloat(formData.price.toString()) || 0,
       currency: formData.currency,
-      renew_date: formData.renewDate,
-      start_date: formData.startDate || new Date().toISOString().split('T')[0],
-      payment_date: formData.paymentDate ? parseInt(formData.paymentDate) : null,
-      payment_card: formData.paymentCard?.trim() || null,
+      renew_date: formData.renew_date,
+      start_date: formData.start_date || new Date().toISOString().split('T')[0],
+      payment_date: formData.payment_date ? parseInt(formData.payment_date) : null,
+      payment_card: formData.payment_card?.trim() || null,
       url: formData.url?.trim() || null,
       color: formData.color || '#3B82F6',
       category: formData.category?.trim() || null,
-      is_active: formData.isActive !== false
+      is_active: formData.is_active !== false
     };
 
     // 데이터 검증 로그
@@ -339,29 +339,29 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
             <h3 className="text-lg font-semibold text-gray-900">날짜 정보</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="startDate">시작일</Label>
+                              <div className="space-y-2">
+                <Label htmlFor="start_date">시작일</Label>
                 <div className="relative">
                   <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <Input
-                    id="startDate"
+                    id="start_date"
                     type="date"
-                    value={formData.startDate}
-                    onChange={(e) => handleInputChange('startDate', e.target.value)}
+                    value={formData.start_date}
+                    onChange={(e) => handleInputChange('start_date', e.target.value)}
                     className="pl-10"
                   />
                 </div>
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="renewDate">갱신일 *</Label>
+                <Label htmlFor="renew_date">갱신일 *</Label>
                 <div className="relative">
                   <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <Input
-                    id="renewDate"
+                    id="renew_date"
                     type="date"
-                    value={formData.renewDate}
-                    onChange={(e) => handleInputChange('renewDate', e.target.value)}
+                    value={formData.renew_date}
+                    onChange={(e) => handleInputChange('renew_date', e.target.value)}
                     className="pl-10"
                     required
                   />
@@ -369,14 +369,14 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="paymentDate">결제일</Label>
+                <Label htmlFor="payment_date">결제일</Label>
                 <Input
-                  id="paymentDate"
+                  id="payment_date"
                   type="number"
                   min="1"
                   max="31"
-                  value={formData.paymentDate}
-                  onChange={(e) => handleInputChange('paymentDate', e.target.value)}
+                  value={formData.payment_date}
+                  onChange={(e) => handleInputChange('payment_date', e.target.value)}
                   placeholder="1-31"
                 />
               </div>
@@ -404,11 +404,11 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="paymentCard">결제 카드</Label>
+                <Label htmlFor="payment_card">결제 카드</Label>
                 <Input
-                  id="paymentCard"
-                  value={formData.paymentCard}
-                  onChange={(e) => handleInputChange('paymentCard', e.target.value)}
+                  id="payment_card"
+                  value={formData.payment_card}
+                  onChange={(e) => handleInputChange('payment_card', e.target.value)}
                   placeholder="예: 신한카드, 체크카드"
                 />
               </div>
