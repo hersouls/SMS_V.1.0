@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import SafeSubscriptionApp from './SafeSubscriptionApp';
+import { EnhancedSubscriptionApp } from './EnhancedSubscriptionApp';
 import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
 
@@ -86,7 +86,7 @@ const ErrorScenarioTester: React.FC = () => {
       </div>
 
       {/* 실제 앱 */}
-      <SafeSubscriptionApp />
+      <EnhancedSubscriptionApp />
     </div>
   );
 };
