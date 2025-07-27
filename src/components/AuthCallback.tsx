@@ -12,11 +12,20 @@ export const AuthCallback: React.FC = () => {
     const handleAuthCallback = async () => {
       try {
         console.log('Handling auth callback...');
+        console.log('Current URL:', window.location.href);
+        console.log('Search params:', window.location.search);
+        console.log('Hash:', window.location.hash);
         
-        // URL 파라미터 확인
+        // URL 파라미터와 hash fragments 모두 확인
         const urlParams = new URLSearchParams(window.location.search);
-        const error = urlParams.get('error');
-        const errorDescription = urlParams.get('error_description');
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        
+        console.log('URL params:', Object.fromEntries(urlParams.entries()));
+        console.log('Hash params:', Object.fromEntries(hashParams.entries()));
+        
+        // 오류 확인 (URL params와 hash 모두에서)
+        const error = urlParams.get('error') || hashParams.get('error');
+        const errorDescription = urlParams.get('error_description') || hashParams.get('error_description');
         
         if (error) {
           console.error('OAuth error:', error, errorDescription);
@@ -25,7 +34,30 @@ export const AuthCallback: React.FC = () => {
           return;
         }
 
-        // 세션 확인
+        // authorization code가 있는 경우 Supabase에 교환 요청
+        const code = urlParams.get('code');
+        if (code) {
+          console.log('Authorization code found, exchanging for session...');
+          
+          const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+          
+          if (exchangeError) {
+            console.error('Code exchange error:', exchangeError);
+            setError(`코드 교환 오류: ${exchangeError.message}`);
+            setLoading(false);
+            return;
+          }
+          
+          if (data.session) {
+            console.log('Code exchange successful, user logged in');
+            // URL 정리
+            window.history.replaceState({}, document.title, '/');
+            navigate('/', { replace: true });
+            return;
+          }
+        }
+
+        // 기존 세션 확인
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
         if (sessionError) {
@@ -37,12 +69,24 @@ export const AuthCallback: React.FC = () => {
 
         if (session) {
           console.log('Auth callback successful, user logged in');
-          // 메인 페이지로 리다이렉트
+          // URL 정리
+          window.history.replaceState({}, document.title, '/');
           navigate('/', { replace: true });
         } else {
           console.log('No session found after callback');
-          setError('로그인 세션을 찾을 수 없습니다.');
-          setLoading(false);
+          
+          // 잠시 기다린 후 다시 시도 (Supabase auth가 처리 중일 수 있음)
+          setTimeout(async () => {
+            const { data: { session: retrySession } } = await supabase.auth.getSession();
+            if (retrySession) {
+              console.log('Session found on retry');
+              window.history.replaceState({}, document.title, '/');
+              navigate('/', { replace: true });
+            } else {
+              setError('로그인 세션을 찾을 수 없습니다. 다시 시도해주세요.');
+              setLoading(false);
+            }
+          }, 2000);
         }
         
       } catch (error: any) {
