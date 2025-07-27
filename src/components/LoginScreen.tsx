@@ -64,7 +64,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: siteUrl,
+          redirectTo: `${siteUrl}/auth/callback`,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',

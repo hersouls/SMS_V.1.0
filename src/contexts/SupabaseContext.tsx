@@ -48,62 +48,10 @@ export const SupabaseProvider: React.FC<SupabaseProviderProps> = ({ children }) 
       }
     }, 5000); // 5초로 증가
 
-    // URL에서 OAuth 콜백 파라미터 확인
+    // URL에서 OAuth 콜백 파라미터 확인 (디버그용)
     const urlParams = new URLSearchParams(window.location.search);
-    const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    
     console.log('URL params:', Object.fromEntries(urlParams.entries()));
-    console.log('Hash params:', Object.fromEntries(hashParams.entries()));
-
-    // Authorization code가 있는 경우 먼저 처리
-    const authCode = urlParams.get('code');
-    if (authCode) {
-      console.log('Authorization code found, exchanging for session...');
-      
-      supabase.auth.exchangeCodeForSession(authCode).then(({ data, error }) => {
-        if (!isMounted) return;
-        
-        if (timeoutId) {
-          clearTimeout(timeoutId);
-          timeoutId = null;
-        }
-        
-        if (error) {
-          console.error('Code exchange error:', error);
-          setLoading(false);
-          return;
-        }
-        
-        if (data.session) {
-          console.log('Code exchange successful');
-          setSession(data.session);
-          setUser(data.session.user);
-          fetchProfile(data.session.user.id, data.session.user);
-          
-          // URL 정리
-          const cleanURL = `${window.location.origin}${window.location.pathname}`;
-          window.history.replaceState({}, document.title, cleanURL);
-        }
-        
-        setLoading(false);
-      }).catch((error) => {
-        if (!isMounted) return;
-        
-        console.error('Code exchange failed:', error);
-        if (timeoutId) {
-          clearTimeout(timeoutId);
-          timeoutId = null;
-        }
-        setLoading(false);
-      });
-      
-      return () => {
-        isMounted = false;
-        if (timeoutId) {
-          clearTimeout(timeoutId);
-        }
-      };
-    }
+    console.log('Current path:', window.location.pathname);
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!isMounted) return;
@@ -160,9 +108,9 @@ export const SupabaseProvider: React.FC<SupabaseProviderProps> = ({ children }) 
           const urlObj = new URL(currentURL);
           
           // OAuth 콜백 파라미터가 있는 경우 정리
-          if (urlObj.searchParams.has('access_token') || 
+          if (urlObj.pathname === '/auth/callback' || 
+              urlObj.searchParams.has('access_token') || 
               urlObj.searchParams.has('refresh_token') || 
-              urlObj.hash.includes('access_token') ||
               urlObj.searchParams.has('error') ||
               urlObj.searchParams.has('error_description') ||
               urlObj.searchParams.has('code') ||
