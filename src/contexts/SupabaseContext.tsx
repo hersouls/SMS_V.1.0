@@ -55,6 +55,56 @@ export const SupabaseProvider: React.FC<SupabaseProviderProps> = ({ children }) 
     console.log('URL params:', Object.fromEntries(urlParams.entries()));
     console.log('Hash params:', Object.fromEntries(hashParams.entries()));
 
+    // Authorization code가 있는 경우 먼저 처리
+    const authCode = urlParams.get('code');
+    if (authCode) {
+      console.log('Authorization code found, exchanging for session...');
+      
+      supabase.auth.exchangeCodeForSession(authCode).then(({ data, error }) => {
+        if (!isMounted) return;
+        
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+          timeoutId = null;
+        }
+        
+        if (error) {
+          console.error('Code exchange error:', error);
+          setLoading(false);
+          return;
+        }
+        
+        if (data.session) {
+          console.log('Code exchange successful');
+          setSession(data.session);
+          setUser(data.session.user);
+          fetchProfile(data.session.user.id, data.session.user);
+          
+          // URL 정리
+          const cleanURL = `${window.location.origin}${window.location.pathname}`;
+          window.history.replaceState({}, document.title, cleanURL);
+        }
+        
+        setLoading(false);
+      }).catch((error) => {
+        if (!isMounted) return;
+        
+        console.error('Code exchange failed:', error);
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+          timeoutId = null;
+        }
+        setLoading(false);
+      });
+      
+      return () => {
+        isMounted = false;
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+      };
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!isMounted) return;
       

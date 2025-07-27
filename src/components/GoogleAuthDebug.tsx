@@ -31,7 +31,7 @@ export const GoogleAuthDebug: React.FC = () => {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${siteUrl}/#/auth/callback`,
+          redirectTo: siteUrl,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
