@@ -556,8 +556,11 @@ interface Profile {
         paymentDate: (sub.payment_date !== null && sub.payment_date !== undefined) ? sub.payment_date.toString() : '',
         paymentCard: sub.payment_card || '',
         url: sub.url || '',
-        color: sub.color || '#000000',
-        category: sub.category || ''
+        color: sub.color || '#3B82F6',
+        category: sub.category || '',
+        isActive: sub.is_active !== false,
+        createdAt: sub.created_at,
+        updatedAt: sub.updated_at
       }));
       setSubscriptions(localSubscriptions);
     } catch (error) {
@@ -866,14 +869,14 @@ interface Profile {
     console.log('Supabase 클라이언트:', !!supabase);
     console.log('네트워크 상태:', navigator.onLine);
     
-    // 필수 필드 검증
+    // 필수 필드 검증 (새 스키마 기준)
     if (!formData.name || !formData.price || !formData.renew_date) {
       console.error('필수 필드 누락:', { name: formData.name, price: formData.price, renew_date: formData.renew_date });
       alert('필수 정보가 누락되었습니다. 서비스명, 가격, 갱신일을 모두 입력해주세요.');
       return;
     }
 
-    // 날짜 형식 검증
+    // 날짜 형식 검증 (새 스키마 기준)
     if (formData.renew_date && !formData.renew_date.match(/^\d{4}-\d{2}-\d{2}$/)) {
       console.error('잘못된 갱신일 형식:', formData.renew_date);
       alert('갱신일 형식이 올바르지 않습니다. (YYYY-MM-DD)');
@@ -937,13 +940,14 @@ interface Profile {
         is_active: Boolean(formData.is_active !== false)
       };
 
-      // 필드명 매핑 디버깅
-      console.log('=== 필드명 매핑 디버깅 ===');
+      // 필드명 매핑 디버깅 (새 스키마 기준)
+      console.log('=== 필드명 매핑 디버깅 (새 스키마) ===');
       console.log('formData.icon_image_url:', formData.icon_image_url);
       console.log('formData.renew_date:', formData.renew_date);
       console.log('formData.start_date:', formData.start_date);
       console.log('formData.payment_date:', formData.payment_date);
       console.log('formData.payment_card:', formData.payment_card);
+      console.log('formData.is_active:', formData.is_active);
 
       // 추가 데이터 검증
       if (insertData.price <= 0) {
@@ -1044,7 +1048,10 @@ interface Profile {
         paymentCard: data.payment_card || '',
         url: data.url || '',
         color: data.color || '#3B82F6',
-        category: data.category || ''
+        category: data.category || '',
+        isActive: data.is_active !== false,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at
       };
 
       console.log('=== 로컬 구독 객체 생성 완료 ===');
@@ -1110,21 +1117,21 @@ interface Profile {
         return;
       }
 
-      // 업데이트할 데이터 준비
+      // 업데이트할 데이터 준비 (DB 스키마에 맞게 변환)
       const updateData = {
-        name: formData.name,
-        icon: formData.icon || '📱',
-        icon_image_url: formData.iconImage || null,
-        price: formData.price,
-        currency: formData.currency,
-        renew_date: formData.renew_date,
-        start_date: formData.start_date,
-        payment_date: formData.payment_date,
-        payment_card: formData.payment_card || null,
-        url: formData.url || null,
-        color: formData.color || '#3B82F6',
-        category: formData.category || null,
-        is_active: formData.is_active !== false
+        name: String(formData.name || '').trim(),
+        icon: String(formData.icon || '📱'),
+        icon_image_url: formData.icon_image_url ? String(formData.icon_image_url) : null,
+        price: parseFloat(String(formData.price || 0)) || 0,
+        currency: String(formData.currency || 'KRW'),
+        renew_date: String(formData.renew_date || ''),
+        start_date: formData.start_date ? String(formData.start_date) : null,
+        payment_date: formData.payment_date ? parseInt(String(formData.payment_date)) : null,
+        payment_card: formData.payment_card ? String(formData.payment_card).trim() : null,
+        url: formData.url ? String(formData.url).trim() : null,
+        color: String(formData.color || '#3B82F6'),
+        category: formData.category ? String(formData.category).trim() : null,
+        is_active: Boolean(formData.is_active !== false)
       };
 
       console.log('업데이트할 데이터:', updateData);
@@ -1164,7 +1171,9 @@ interface Profile {
         paymentCard: data.payment_card || '',
         url: data.url || '',
         color: data.color || '#3B82F6',
-        category: data.category || ''
+        category: data.category || '',
+        isActive: data.is_active !== false,
+        updatedAt: data.updated_at
       };
 
       setSubscriptions(prev => 
@@ -2309,7 +2318,7 @@ interface Profile {
           const testData = {
             name: 'Test Service',
             icon: '🧪',
-            iconImage: '',
+            icon_image_url: null,
             price: 1000,
             currency: 'KRW',
             renew_date: new Date().toISOString().split('T')[0],
