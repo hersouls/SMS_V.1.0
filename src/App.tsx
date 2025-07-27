@@ -15,7 +15,7 @@ import { SupabaseDebugger } from './components/SupabaseDebugger';
 import { EmergencyTroubleshooter } from './components/EmergencyTroubleshooter';
 import SafeSubscriptionApp from './components/SafeSubscriptionApp';
 import ErrorScenarioTester from './components/ErrorScenarioTester';
-import SupabaseConnectionTest from './components/SupabaseConnectionTest';
+
 import Header from './components/ui/header';
 import StatsCard from './components/ui/stats-card';
 import SubscriptionCard from './components/ui/subscription-card';
@@ -1943,10 +1943,7 @@ interface Profile {
           {/* 반응형 최대 너비 제한 */}
           <div className="max-w-[1400px] 2xl:max-w-[1600px] mx-auto">
             
-            {/* 임시 Supabase 연결 테스트 */}
-            <div className="mb-8">
-              <SupabaseConnectionTest />
-            </div>
+
             
             {/* 통계 카드 섹션 */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-2 2xl:grid-cols-3 gap-4 lg:gap-6 mb-8">
@@ -3043,7 +3040,7 @@ const App = () => {
         <Route path="/test" element={<TestPage />} />
         <Route path="/safe" element={<SafeSubscriptionApp />} />
         <Route path="/error-test" element={<ErrorScenarioTester />} />
-        <Route path="/supabase-test" element={<SupabaseConnectionTest />} />
+
         <Route path="/" element={<SubscriptionApp />} />
       </Routes>
     </Router>
