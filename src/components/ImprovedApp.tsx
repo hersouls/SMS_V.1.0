@@ -13,7 +13,7 @@ import { GoogleAuthDebug } from './GoogleAuthDebug';
 import { AuthCallback } from './AuthCallback';
 import { SupabaseDebugger } from './SupabaseDebugger';
 import { EmergencyTroubleshooter } from './EmergencyTroubleshooter';
-import SafeSubscriptionApp from './SafeSubscriptionApp';
+
 import ErrorScenarioTester from './ErrorScenarioTester';
 import SupabaseConnectionTest from './SupabaseConnectionTest';
 import Header from './ui/header';
@@ -826,7 +826,7 @@ const ImprovedSubscriptionApp: React.FC = () => {
                 onClose={() => {}}
               />
             } />
-            <Route path="/safe-subscription-app" element={<SafeSubscriptionApp />} />
+
             <Route path="/error-scenario-tester" element={<ErrorScenarioTester />} />
             <Route path="/supabase-connection-test" element={<SupabaseConnectionTest />} />
           </Routes>

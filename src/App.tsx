@@ -13,7 +13,7 @@ import { GoogleAuthDebug } from './components/GoogleAuthDebug';
 import { AuthCallback } from './components/AuthCallback';
 import { SupabaseDebugger } from './components/SupabaseDebugger';
 import { EmergencyTroubleshooter } from './components/EmergencyTroubleshooter';
-import SafeSubscriptionApp from './components/SafeSubscriptionApp';
+import ImprovedSubscriptionApp from './components/ImprovedApp';
 import ErrorScenarioTester from './components/ErrorScenarioTester';
 
 import Header from './components/ui/header';
@@ -3038,10 +3038,10 @@ const App = () => {
       <Routes>
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/test" element={<TestPage />} />
-        <Route path="/safe" element={<SafeSubscriptionApp />} />
         <Route path="/error-test" element={<ErrorScenarioTester />} />
+        <Route path="/legacy" element={<SubscriptionApp />} />
 
-        <Route path="/" element={<SubscriptionApp />} />
+        <Route path="/" element={<ImprovedSubscriptionApp />} />
       </Routes>
     </Router>
   );
