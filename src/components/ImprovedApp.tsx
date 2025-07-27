@@ -15,7 +15,7 @@ import { SupabaseDebugger } from './SupabaseDebugger';
 import { EmergencyTroubleshooter } from './EmergencyTroubleshooter';
 import SafeSubscriptionApp from './SafeSubscriptionApp';
 import ErrorScenarioTester from './ErrorScenarioTester';
-import SupabaseConnectionTest from './SupabaseConnectionTest';
+
 import Header from './ui/header';
 import StatsCard from './ui/stats-card';
 import SubscriptionCard from './ui/subscription-card';
@@ -828,7 +828,7 @@ const ImprovedSubscriptionApp: React.FC = () => {
             } />
             <Route path="/safe-subscription-app" element={<SafeSubscriptionApp />} />
             <Route path="/error-scenario-tester" element={<ErrorScenarioTester />} />
-            <Route path="/supabase-connection-test" element={<SupabaseConnectionTest />} />
+
           </Routes>
         </main>
       </div>
