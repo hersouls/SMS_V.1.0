@@ -61,10 +61,14 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
       const siteUrl = process.env.REACT_APP_SITE_URL || window.location.origin;
       addDebugInfo(`Using site URL: ${siteUrl}`);
       
+      // 리다이렉트 URL 설정
+      const redirectUrl = `${siteUrl}/#/auth/callback`;
+      addDebugInfo(`Redirect URL: ${redirectUrl}`);
+      
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${siteUrl}/auth/callback`,
+
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
