@@ -9,6 +9,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { useSupabase } from './contexts/SupabaseContext';
 import { LoginScreen } from './components/LoginScreen';
+import config from './config/env';
 
 import { AuthCallback } from './components/AuthCallback';
 
@@ -803,7 +804,7 @@ interface Profile {
         console.log('Exchange rate loaded from database:', data.rate);
       } else {
         // 외부 API에서 환율 정보 가져오기 (API 키가 설정된 경우)
-        const apiKey = process.env.REACT_APP_EXCHANGE_RATE_API_KEY;
+        const apiKey = config.exchangeRateApiKey;
         if (apiKey && apiKey !== 'your_exchange_rate_api_key') {
           try {
             const response = await fetch(`https://api.exchangerate-api.com/v4/latest/USD`);

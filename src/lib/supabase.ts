@@ -1,7 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
+import config from '../config/env';
 
-const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://hmgxlxnrarciimggycxj.supabase.co';
-const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhtZ3hseG5yYXJjaWltZ2d5Y3hqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4NTEyMTMsImV4cCI6MjA2ODQyNzIxM30.F39Ko64J1tewWuw6OLLPTSLjy4gdE9L9yNgn56wbP7k';
+// Use centralized config for better consistency
+const supabaseUrl = config.supabaseUrl;
+const supabaseAnonKey = config.supabaseAnonKey;
 
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables');
@@ -28,12 +30,11 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 export const getAuthRedirectUrl = () => {
   if (typeof window !== 'undefined') {
     // 브라우저 환경에서는 현재 origin 사용
-    const siteUrl = process.env.REACT_APP_SITE_URL || window.location.origin;
-    return process.env.REACT_APP_SUPABASE_AUTH_REDIRECT_URL || `${siteUrl}/#/auth/callback`;
+    const siteUrl = config.siteUrl || window.location.origin;
+    return config.supabaseAuthRedirectUrl || `${siteUrl}/#/auth/callback`;
   }
   // 서버 환경에서는 환경 변수 사용
-  return process.env.REACT_APP_SUPABASE_AUTH_REDIRECT_URL || 
-         `${process.env.REACT_APP_SITE_URL || 'http://localhost:3000'}/#/auth/callback`;
+  return config.supabaseAuthRedirectUrl;
 };
 
 // Supabase 클라이언트 상태 확인 함수
