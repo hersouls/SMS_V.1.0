@@ -30,7 +30,7 @@ export const VerificationStep: React.FC<VerificationStepProps> = ({
     try {
       console.log('Sending verification email to:', data.email);
       console.log('Current origin:', window.location.origin);
-      console.log('Redirect URL:', process.env.REACT_APP_SUPABASE_AUTH_REDIRECT_URL || `${window.location.origin}/#/auth/callback`);
+      console.log('Redirect URL:', process.env.REACT_APP_SUPABASE_AUTH_REDIRECT_URL || `${window.location.origin}/auth/callback`);
       console.log('Environment:', process.env.REACT_APP_ENV);
       console.log('Supabase URL:', process.env.REACT_APP_SUPABASE_URL);
       
@@ -44,7 +44,7 @@ export const VerificationStep: React.FC<VerificationStepProps> = ({
             phone_number: data.phoneNumber,
             agree_to_marketing: data.agreeToMarketing,
           },
-          emailRedirectTo: process.env.REACT_APP_SUPABASE_AUTH_REDIRECT_URL || `${window.location.origin}/#/auth/callback`,
+          emailRedirectTo: process.env.REACT_APP_SUPABASE_AUTH_REDIRECT_URL || `${window.location.origin}/auth/callback`,
         },
       });
 
@@ -106,13 +106,13 @@ export const VerificationStep: React.FC<VerificationStepProps> = ({
 
     try {
       console.log('Resending verification email to:', data.email);
-      console.log('Resend redirect URL:', `${window.location.origin}/#/auth/callback`);
+      console.log('Resend redirect URL:', `${window.location.origin}/auth/callback`);
       
       const { error } = await supabase.auth.resend({
         type: 'signup',
         email: data.email,
         options: {
-          emailRedirectTo: process.env.REACT_APP_SUPABASE_AUTH_REDIRECT_URL || `${window.location.origin}/#/auth/callback`,
+          emailRedirectTo: process.env.REACT_APP_SUPABASE_AUTH_REDIRECT_URL || `${window.location.origin}/auth/callback`,
         },
       });
 

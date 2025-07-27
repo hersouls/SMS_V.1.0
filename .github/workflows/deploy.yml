@@ -36,7 +36,7 @@ jobs:
         run: npm run build
         env:
           CI: false
-          REACT_APP_HOMEPAGE: https://subscription.moonwave.kr
+          REACT_APP_HOMEPAGE: https://travel.moonwave.kr
         
       - name: Setup Pages
         uses: actions/configure-pages@v4
