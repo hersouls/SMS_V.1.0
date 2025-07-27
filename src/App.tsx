@@ -9,10 +9,9 @@ import {
 } from '@heroicons/react/24/outline';
 import { useSupabase } from './contexts/SupabaseContext';
 import { LoginScreen } from './components/LoginScreen';
-import { GoogleAuthDebug } from './components/GoogleAuthDebug';
+
 import { AuthCallback } from './components/AuthCallback';
-import { SupabaseDebugger } from './components/SupabaseDebugger';
-import { EmergencyTroubleshooter } from './components/EmergencyTroubleshooter';
+
 import SafeSubscriptionApp from './components/SafeSubscriptionApp';
 import ErrorScenarioTester from './components/ErrorScenarioTester';
 
@@ -20,7 +19,7 @@ import Header from './components/ui/header';
 import StatsCard from './components/ui/stats-card';
 import SubscriptionCard from './components/ui/subscription-card';
 import SubscriptionForm from './components/ui/subscription-form';
-import DebugPanel from './components/DebugPanel';
+
 import { Button } from './components/ui/button';
 import TestPage from './pages/TestPage';
 import { createDebugObject } from './utils/responsive-debug';
@@ -1594,7 +1593,6 @@ interface Profile {
   };
 
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [showEmergencyTroubleshooter, setShowEmergencyTroubleshooter] = useState(false);
 
   const handleLogout = async () => {
     if (isLoggingOut) {
@@ -1763,55 +1761,14 @@ interface Profile {
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  // 18. 구독 추가 디버그 함수
-  const debugSubscriptionAdd = async () => {
-    console.log('=== 구독 추가 디버그 정보 ===');
-    console.log('현재 사용자:', user?.id);
-    console.log('Supabase 클라이언트:', !!supabase);
-    console.log('현재 구독 목록:', subscriptions.length);
-    console.log('isAddingSubscription:', isAddingSubscription);
-    console.log('네트워크 상태:', navigator.onLine);
-    
-    // Supabase 연결 테스트
-    try {
-      const connectionResult = await testSupabaseConnection();
-      console.log('Supabase 연결 테스트 결과:', connectionResult);
-    } catch (error) {
-      console.error('Supabase 연결 테스트 오류:', error);
-    }
 
-    // 테스트 구독 추가
-    const testData = {
-      name: `테스트 구독 ${Date.now()}`, // 중복 방지를 위해 타임스탬프 추가
-      icon: '🧪',
-      icon_image_url: null,
-      price: 9900,
-      currency: 'KRW',
-      renew_date: '2024-03-15',
-      start_date: '2024-02-15',
-      payment_date: 15,
-      payment_card: null,
-      url: null,
-      category: 'testing',
-      color: '#10B981',
-      is_active: true
-    };
-    
-    console.log('=== 테스트 구독 추가 시작 ===');
-    console.log('테스트 데이터:', testData);
-    await handleAddSubscriptionWithForm(testData);
-  };
 
   // 컴포넌트 마운트 시 오디오 초기화 및 자동 재생
   useEffect(() => {
     if (isLoggedIn) {
       initializeAudio();
       
-      // 개발환경에서 디버그 함수를 전역으로 노출
-      if (process.env.NODE_ENV === 'development') {
-        (window as any).debugSubscriptionAdd = debugSubscriptionAdd;
-        console.log('🔧 디버그 모드: window.debugSubscriptionAdd() 함수가 사용 가능합니다.');
-      }
+
       
       // 자동 재생 시도 (브라우저 정책으로 인해 사용자 상호작용 후에만 작동)
       const attemptAutoPlay = async () => {
@@ -1873,10 +1830,7 @@ interface Profile {
   // 로그인하지 않은 경우 로그인 화면 표시
   if (!isLoggedIn) {
     return (
-      <>
-        <LoginScreen onLoginSuccess={() => setIsLoggedIn(true)} />
-        <GoogleAuthDebug />
-      </>
+      <LoginScreen onLoginSuccess={() => setIsLoggedIn(true)} />
     );
   }
 
@@ -2252,30 +2206,7 @@ interface Profile {
       {/* 오른쪽 하단 고정 버튼들 */}
       <div className="fixed bottom-20 right-4 flex flex-col gap-3 z-40">
         
-        {/* 개발 환경에서만 보이는 디버그 버튼 */}
-        {process.env.NODE_ENV === 'development' && (
-          <>
-            <Button
-              onClick={debugSubscriptionAdd}
-              variant="outline"
-              size="icon"
-              className="w-12 h-12 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-500"
-              title="구독 추가 디버그 테스트"
-            >
-              🔧
-            </Button>
-            <Button
-              onClick={() => setShowEmergencyTroubleshooter(true)}
-              variant="outline"
-              size="icon"
-              className="w-12 h-12 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 bg-red-500 hover:bg-red-600 text-white border-red-500"
-              title="긴급 상황 진단 도구"
-            >
-              🚨
-            </Button>
-          </>
-        )}
-        
+
         {/* 구독 추가 버튼 */}
         <Button
           onClick={() => {
@@ -2290,50 +2221,9 @@ interface Profile {
         </Button>
       </div>
 
-      {/* 개발 환경에서만 보이는 Supabase 디버거 */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="fixed top-4 left-4 z-50 max-w-md">
-          <SupabaseDebugger />
-        </div>
-      )}
 
-      {/* 디버그 패널 */}
-      <DebugPanel
-        onTestConnection={async () => {
-          console.log('=== 디버그: DB 연결 테스트 시작 ===');
-          const result = await testSupabaseConnection();
-          console.log('DB 연결 테스트 결과:', result);
-        }}
-        onTestSubscription={async () => {
-          console.log('=== 디버그: 테스트 구독 추가 시작 ===');
-          const testData = {
-            name: 'Test Service',
-            icon: '🧪',
-            iconImage: '',
-            price: 1000,
-            currency: 'KRW',
-            renew_date: new Date().toISOString().split('T')[0],
-            start_date: new Date().toISOString().split('T')[0],
-            payment_date: 15,
-            payment_card: 'Test Card',
-            url: 'https://example.com',
-            color: '#FF6B6B',
-            category: 'test',
-            is_active: true
-          };
-          await handleAddSubscriptionWithForm(testData);
-        }}
-        onClearLogs={() => {
-          console.clear();
-          console.log('=== 콘솔 로그가 지워졌습니다 ===');
-        }}
-      />
 
-      {/* 긴급 상황 진단 도구 */}
-      <EmergencyTroubleshooter
-        isVisible={showEmergencyTroubleshooter}
-        onClose={() => setShowEmergencyTroubleshooter(false)}
-      />
+
       </div>
     );
   }
