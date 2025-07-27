@@ -44,7 +44,7 @@ export const config = {
   googleClientSecret: process.env.REACT_APP_GOOGLE_CLIENT_SECRET,
   
   // Site Configuration
-  siteUrl: process.env.REACT_APP_SITE_URL || 'http://localhost:3000',
+  siteUrl: process.env.REACT_APP_SITE_URL || 'https://travel.moonwave.kr',
   appName: process.env.REACT_APP_APP_NAME || '구독 관리 앱',
   
   // Environment
@@ -57,7 +57,7 @@ export const config = {
   exchangeRateApiKey: process.env.REACT_APP_EXCHANGE_RATE_API_KEY,
   
   // Auth Configuration
-  supabaseAuthRedirectUrl: process.env.REACT_APP_SUPABASE_AUTH_REDIRECT_URL || `${process.env.REACT_APP_SITE_URL || 'http://localhost:3000'}/#/auth/callback`,
+  supabaseAuthRedirectUrl: process.env.REACT_APP_SUPABASE_AUTH_REDIRECT_URL || `${process.env.REACT_APP_SITE_URL || 'https://travel.moonwave.kr'}/auth/callback`,
 } as const;
 
 // Additional validation for Supabase URL format
